@@ -1,0 +1,12 @@
+
+<style>
+.stButton>button { 
+  background-color: #1e62e5;
+  color: #ffffff;
+  border-radius: 10px;
+  border: none;
+}
+.stButton>button:hover {
+  background-color: #ff7a00;
+}
+</style>
