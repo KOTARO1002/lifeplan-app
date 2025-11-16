@@ -26,12 +26,15 @@ start_age = st.sidebar.number_input("現在の年齢", 20, 60, 40)
 start_year = datetime.today().year
 end_age = 65
 
-# 配偶者
-has_spouse = st.sidebar.checkbox("配偶者あり")
+# 配偶者の有無
+has_spouse = st.checkbox("配偶者あり")
+
+# 配偶者ありの場合のみ年齢入力欄を表示
 if has_spouse:
-    spouse_age = st.sidebar.number_input("配偶者の現在の年齢", 20, 60, 40)
+    spouse_age = st.number_input("配偶者の現在の年齢", min_value=18, max_value=100, value=30)
 else:
-    spouse_age = None
+    spouse_age = None  # 配偶者なしの場合は None をセット
+
 
 # 年収（手取りベース）
 income = st.sidebar.number_input("本人の手取り年収（円）", 0, 30_000_000, 6_000_000)
