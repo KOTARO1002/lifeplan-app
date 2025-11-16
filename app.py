@@ -376,19 +376,20 @@ def load_logo_base64(path: Path) -> str:
 if logo_path.exists():
     logo_b64 = load_logo_base64(logo_path)
     st.markdown(
-        f"""
-        <style>
-        .fixed-logo {{
-            position: fixed;
-            top: 20px;   /* 上からの距離 */
-            right: 20px; /* 右からの距離 */
-            width: 120px; /* ロゴの大きさ（px）必要に応じて調整 */
-            z-index: 9999;
-        }}
-        </style>
-        <img src="data:image/png;base64,{logo_b64}" class="fixed-logo">
-        """,
-        unsafe_allow_html=True,
-    )
+    f"""
+    <style>
+    .fixed-logo {{
+        position: fixed;
+        top: 70px;     /* 上からの距離：タイトルより少し上くらいに */
+        right: 40px;   /* 右からの距離：画面端から少し内側に */
+        width: 100px;  /* ロゴを少し小さくして被りにくくする */
+        z-index: 9999;
+        pointer-events: none;  /* ロゴの上でもクリック操作を邪魔しない */
+    }}
+    </style>
+    <img src="data:image/png;base64,{logo_b64}" class="fixed-logo">
+    """,
+    unsafe_allow_html=True,
+)
 else:
     st.warning("ロゴ画像（logo_sh.png）が見つかりませんでした。")
