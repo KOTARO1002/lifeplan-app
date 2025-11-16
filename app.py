@@ -11,7 +11,7 @@ import base64
 # ========================
 # 日本語フォント設定（文字化け防止）
 # ========================
-font_path = "fonts/ipaexg.ttf"  # さっき置いたフォントのパス
+font_path = "fonts/ipaexg.ttf"  # フォントファイルのパス
 fm.fontManager.addfont(font_path)
 matplotlib.rcParams["font.family"] = "IPAexGothic"  # フォント内部名
 
@@ -26,15 +26,12 @@ start_age = st.sidebar.number_input("現在の年齢", 20, 60, 40)
 start_year = datetime.today().year
 end_age = 65
 
-# 配偶者の有無
-has_spouse = st.checkbox("配偶者あり")
-
-# 配偶者ありの場合のみ年齢入力欄を表示
+# 配偶者（サイドバーに表示）
+has_spouse = st.sidebar.checkbox("配偶者あり")
 if has_spouse:
-    spouse_age = st.number_input("配偶者の現在の年齢", min_value=18, max_value=100, value=30)
+    spouse_age = st.sidebar.number_input("配偶者の現在の年齢", 20, 60, 40)
 else:
-    spouse_age = None  # 配偶者なしの場合は None をセット
-
+    spouse_age = None
 
 # 年収（手取りベース）
 income = st.sidebar.number_input("本人の手取り年収（円）", 0, 30_000_000, 6_000_000)
@@ -272,8 +269,9 @@ st.header("キャッシュフロー表")
 # 子ども年齢列を動的に生成
 child_age_cols = [f"子{i+1}年齢" for i in range(num_children)]
 
-# 西暦列は「列ヘッダー」にだけ使い、行としては表示しない
+# 「配偶者年齢」はいったん含めておき、あとで必要に応じて削除する
 base_cols = ["西暦", "年齢", "配偶者年齢"]
+
 rest_cols = [
     "収入（手取り）", "生活費", "住宅ローン", "管理費・修繕費",
     "教育費", "投資積立額", "支出合計", "年間収支",
@@ -284,8 +282,12 @@ show_cols = base_cols + child_age_cols + rest_cols
 
 df_show = df[show_cols].copy()
 
+# ★ 配偶者なしの場合は「配偶者年齢」列を完全に削除（表＆CSV両方から消える）
+if not has_spouse and "配偶者年齢" in df_show.columns:
+    df_show = df_show.drop(columns=["配偶者年齢"])
+
 # 配偶者年齢 と 西暦 以外は数値として整形（子ども年齢も含めて整数化）
-numeric_cols = [c for c in show_cols if c not in ["配偶者年齢", "西暦"]]
+numeric_cols = [c for c in df_show.columns if c not in ["配偶者年齢", "西暦"]]
 df_show[numeric_cols] = df_show[numeric_cols].round(0).astype(int)
 
 st.caption("※ 収入は手取りベース、金額の単位はすべて円です。投資積立額も支出に含めた後の年間収支・累積貯蓄を表示しています。")
@@ -379,20 +381,20 @@ def load_logo_base64(path: Path) -> str:
 if logo_path.exists():
     logo_b64 = load_logo_base64(logo_path)
     st.markdown(
-    f"""
-    <style>
-    .fixed-logo {{
-        position: fixed;
-        top: 70px;     /* 上からの距離：タイトルより少し上くらいに */
-        right: 40px;   /* 右からの距離：画面端から少し内側に */
-        width: 100px;  /* ロゴを少し小さくして被りにくくする */
-        z-index: 9999;
-        pointer-events: none;  /* ロゴの上でもクリック操作を邪魔しない */
-    }}
-    </style>
-    <img src="data:image/png;base64,{logo_b64}" class="fixed-logo">
-    """,
-    unsafe_allow_html=True,
-)
+        f"""
+        <style>
+        .fixed-logo {{
+            position: fixed;
+            top: 70px;     /* 上からの距離 */
+            right: 40px;   /* 右からの距離 */
+            width: 100px;  /* ロゴの大きさ */
+            z-index: 9999;
+            pointer-events: none;
+        }}
+        </style>
+        <img src="data:image/png;base64,{logo_b64}" class="fixed-logo">
+        """,
+        unsafe_allow_html=True,
+    )
 else:
     st.warning("ロゴ画像（logo_sh.png）が見つかりませんでした。")
