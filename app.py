@@ -361,3 +361,24 @@ st.markdown(
 　本シミュレーションはあくまで目安であり、詳細なライフプラン作成時には個別の金額での再試算をおすすめします。
 """
 )
+
+# ===============================
+# 右下固定ロゴ表示
+# ===============================
+logo_path = "logo_sh.png"  # 保存したロゴファイル名に合わせてください
+
+st.markdown(
+    f"""
+    <style>
+    .fixed-logo {{
+        position: fixed;
+        right: 20px;   /* 右からの余白 */
+        bottom: 20px;  /* 下からの余白 */
+        width: 120px;  /* ロゴの大きさ（必要に応じて調整） */
+        z-index: 9999; /* 最前面に表示 */
+    }}
+    </style>
+    <img src="{logo_path}" class="fixed-logo">
+    """,
+    unsafe_allow_html=True,
+)
