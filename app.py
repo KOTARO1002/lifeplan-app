@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.font_manager as fm
 from datetime import datetime
+from pathlib import Path
+import base64
 
 # ========================
 # 日本語フォント設定（文字化け防止）
@@ -363,22 +365,30 @@ st.markdown(
 )
 
 # ===============================
-# 右下固定ロゴ表示
+# 右上固定ロゴ表示
 # ===============================
-logo_path = "logo_sh.png"  # 保存したロゴファイル名に合わせてください
+logo_path = Path(__file__).parent / "logo_sh.png"
 
-st.markdown(
-    f"""
-    <style>
-    .fixed-logo {{
-        position: fixed;
-        right: 20px;   /* 右からの余白 */
-        bottom: 20px;  /* 下からの余白 */
-        width: 120px;  /* ロゴの大きさ（必要に応じて調整） */
-        z-index: 9999; /* 最前面に表示 */
-    }}
-    </style>
-    <img src="{logo_path}" class="fixed-logo">
-    """,
-    unsafe_allow_html=True,
-)
+def load_logo_base64(path: Path) -> str:
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+if logo_path.exists():
+    logo_b64 = load_logo_base64(logo_path)
+    st.markdown(
+        f"""
+        <style>
+        .fixed-logo {{
+            position: fixed;
+            top: 20px;   /* 上からの距離 */
+            right: 20px; /* 右からの距離 */
+            width: 120px; /* ロゴの大きさ（px）必要に応じて調整 */
+            z-index: 9999;
+        }}
+        </style>
+        <img src="data:image/png;base64,{logo_b64}" class="fixed-logo">
+        """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.warning("ロゴ画像（logo_sh.png）が見つかりませんでした。")
