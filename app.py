@@ -70,8 +70,13 @@ children = st.sidebar.number_input("子どもの人数", 0, 3, 1)
 child_settings = []
 for i in range(int(children)):
     st.sidebar.subheader(f"子ども {i+1}")
-    age_now = st.sidebar.number_input(
-        f"子ども{i+1}の現在の年齢", 0, 25, 5, key=f"age_now_{i}"
+    # 誕生年ベースで入力（未来の年もOK）
+    birth_year = st.sidebar.number_input(
+        f"子ども{i+1}の誕生年（西暦）",
+        start_year - 30,
+        start_year + 30,
+        start_year - 5,
+        key=f"birth_{i}",
     )
     school_type = st.sidebar.selectbox(
         f"子ども{i+1} 中高タイプ", ["公立", "私立"], key=f"type_{i}"
@@ -87,7 +92,7 @@ for i in range(int(children)):
     dorm = st.sidebar.checkbox(f"子ども{i+1} 下宿する", key=f"dorm_{i}")
     child_settings.append(
         {
-            "age_now": int(age_now),      # 現在の年齢（今年）
+            "birth_year": int(birth_year),  # 誕生年
             "school_type": school_type,
             "cram_month": cram_month,
             "uni": uni_type,
@@ -156,19 +161,21 @@ DORM_COST = 800_000     # 下宿費（年額）
 def education_cost_for_year(year_index: int) -> int:
     """
     year_index: 0 がシミュレーション開始年、その +1, +2 ... が以降の年
+    - 子どもの年齢 = （シミュレーション年の西暦） - 誕生年
     - 中高の学費（公立/私立）は 12〜18歳で加算
-    - 「塾・学費（月額）」はおおよそ 6〜22歳の間で毎年加算（今の年齢から反映）
+    - 塾・学費（月額）は 6〜22歳の間だけ加算（小1〜大学生くらい）
+    - 大学・専門は18歳以降に加算
     """
+    current_year = start_year + year_index
     total = 0
     for cs in child_settings:
-        # 今年の年齢 = 現在の年齢 + 経過年数
-        child_age = cs["age_now"] + year_index
+        child_age = current_year - cs["birth_year"]
 
         # 中学〜高校の学校費用（公立/私立）
         if 12 <= child_age <= 18:
             total += PRIVATE_MH if cs["school_type"] == "私立" else PUBLIC_MH
 
-        # 小学校高学年〜大学くらいまでは塾・学費（月額）を反映
+        # 小1〜大学生くらいまでの塾・学費（月額）
         if 6 <= child_age <= 22 and cs["cram_month"] > 0:
             total += cs["cram_month"] * 12
 
@@ -258,9 +265,11 @@ for idx, year in enumerate(years):
         "総資産": total_asset,
     }
 
-    # 子どもごとの年齢を追加（子1年齢, 子2年齢, 子3年齢）
+    # 子どもごとの年齢を追加（マイナスは0歳扱いで表示）
     for j, cs in enumerate(child_settings):
-        row[f"子{j+1}年齢"] = cs["age_now"] + idx
+        child_age_raw = year - cs["birth_year"]
+        display_age = max(0, child_age_raw)
+        row[f"子{j+1}年齢"] = display_age
 
     records.append(row)
 
@@ -287,11 +296,11 @@ show_cols = base_cols + child_age_cols + rest_cols
 
 df_show = df[show_cols].copy()
 
-# ★ 配偶者なしの場合は「配偶者年齢」列を完全に削除（表＆CSV両方から消える）
+# 配偶者なしの場合は「配偶者年齢」列を完全に削除
 if not has_spouse and "配偶者年齢" in df_show.columns:
     df_show = df_show.drop(columns=["配偶者年齢"])
 
-# 配偶者年齢 と 西暦 以外は数値として整形（子ども年齢も含めて整数化）
+# 配偶者年齢 と 西暦 以外は数値として整形
 numeric_cols = [c for c in df_show.columns if c not in ["配偶者年齢", "西暦"]]
 df_show[numeric_cols] = df_show[numeric_cols].round(0).astype(int)
 
@@ -316,12 +325,12 @@ df_body = df_show.drop(columns=["西暦"])
 
 # 転置して 行＝項目、列＝西暦
 df_t = df_body.T
-df_t.columns = years_header  # 一番上のグレー行が西暦、1行目は「年齢」
+df_t.columns = years_header
 
 st.dataframe(df_t.style.apply(highlight, axis=1))
 
 # ===============================
-# CSVダウンロード（CSVには西暦 & 子ども年齢 & 投資積立額も含める）
+# CSVダウンロード
 # ===============================
 csv_data = df_show.to_csv(index=False).encode("utf-8-sig")
 st.download_button("CSVダウンロード", csv_data, "cashflow.csv", "text/csv")
