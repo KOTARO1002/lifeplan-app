@@ -3,12 +3,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.font_manager as fm
 from datetime import datetime
 
 # ========================
 # 日本語フォント設定（文字化け防止）
 # ========================
-matplotlib.rcParams["font.family"] = "MS Gothic"
+font_path = "fonts/ipaexg.ttf"  # さっき置いたフォントのパス
+fm.fontManager.addfont(font_path)
+matplotlib.rcParams["font.family"] = "IPAexGothic"  # フォント内部名
+
 
 st.set_page_config(page_title="ライフプランシミュレーション", layout="wide")
 st.title("ライフプランシミュレーション")
