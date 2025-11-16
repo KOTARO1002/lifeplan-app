@@ -156,15 +156,20 @@ DORM_COST = 800_000     # 下宿費（年額）
 def education_cost_for_year(year_index: int) -> int:
     """
     year_index: 0 がシミュレーション開始年、その +1, +2 ... が以降の年
+    - 中高の学費（公立/私立）は 12〜18歳で加算
+    - 「塾・学費（月額）」はおおよそ 6〜22歳の間で毎年加算（今の年齢から反映）
     """
     total = 0
     for cs in child_settings:
         # 今年の年齢 = 現在の年齢 + 経過年数
         child_age = cs["age_now"] + year_index
 
-        # 中学〜高校
+        # 中学〜高校の学校費用（公立/私立）
         if 12 <= child_age <= 18:
             total += PRIVATE_MH if cs["school_type"] == "私立" else PUBLIC_MH
+
+        # 小学校高学年〜大学くらいまでは塾・学費（月額）を反映
+        if 6 <= child_age <= 22 and cs["cram_month"] > 0:
             total += cs["cram_month"] * 12
 
         # 大学・専門
