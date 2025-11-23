@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -15,8 +16,58 @@ font_path = "fonts/ipaexg.ttf"  # フォントファイルのパス
 fm.fontManager.addfont(font_path)
 matplotlib.rcParams["font.family"] = "IPAexGothic"  # フォント内部名
 
+# ========================
+# ページ設定 & 全体デザイン
+# ========================
 st.set_page_config(page_title="ライフプランシミュレーション", layout="wide")
-st.title("ライフプランシミュレーション")
+
+st.markdown(
+    """
+    <style>
+      :root { --accent:#2D7FF9; --accent2:#00C2A8; --bgsoft:#F6F8FB; --text:#0F172A; }
+      .app-title{
+        font-size: 2.0rem; font-weight: 800; color: var(--text);
+        letter-spacing: .02em; margin-bottom: .2rem;
+      }
+      .app-sub{
+        color:#64748B; font-size: .95rem; margin-bottom: .9rem;
+      }
+      .section-card{
+        background: var(--bgsoft);
+        border: 1px solid #E2E8F0;
+        padding: 1.0rem 1.1rem;
+        border-radius: 14px;
+        margin-bottom: 1.0rem;
+      }
+      /* DataFrameの横幅・表示・スクロール調整 */
+      div[data-testid="stDataFrame"] { width: 100%; }
+      div[data-testid="stDataFrame"] * { font-variant-numeric: tabular-nums; }
+      div[data-testid="stDataFrame"] td, 
+      div[data-testid="stDataFrame"] th {
+        min-width: 110px !important;
+        max-width: 220px !important;
+        white-space: nowrap !important;
+        font-size: 14px !important;
+        padding: 6px 8px !important;
+      }
+      div[data-testid="stDataFrame"] th {
+        background: #0B1220 !important;
+        color: white !important;
+        font-weight: 700 !important;
+        border-bottom: 2px solid #111827 !important;
+      }
+      /* 余計な縦スクロールバーが出ないように調整（高さはst.dataframe側で制御） */
+      div[data-testid="stDataFrame"] > div { overflow-y: hidden !important; }
+      /* 見出し */
+      h2, h3 { letter-spacing: .02em; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# タイトル
+st.markdown('<div class="app-title">ライフプランシミュレーション</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-sub">収入・支出・教育費・投資をまとめて試算できる家計シミュレーター</div>', unsafe_allow_html=True)
 
 # ----------------------------
 # 基本情報
@@ -244,6 +295,12 @@ for idx, year in enumerate(years):
     # 投資残高：昨年までの残高＋リターン＋今年の積立
     invest_balance = invest_balance * (1 + invest_return) + invest_annual
 
+    # 累積貯蓄がマイナスになった場合は、投資残高から補填（切り崩し）
+    if cumulative < 0:
+        deficit = -cumulative
+        invest_balance -= deficit
+        cumulative = 0
+
     # 総資産＝現金（累積貯蓄）＋投資残高
     total_asset = cumulative + invest_balance
 
@@ -278,7 +335,8 @@ df = pd.DataFrame(records)
 # ===============================
 # キャッシュフロー表（横向き）
 # ===============================
-st.header("キャッシュフロー表")
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("キャッシュフロー表")
 
 # 子ども年齢列を動的に生成
 child_age_cols = [f"子{i+1}年齢" for i in range(num_children)]
@@ -306,16 +364,27 @@ df_show[numeric_cols] = df_show[numeric_cols].round(0).astype(int)
 
 st.caption("※ 収入は手取りベース、金額の単位はすべて円です。投資積立額も支出に含めた後の年間収支・累積貯蓄を表示しています。")
 
-# 強調表示用
-def highlight(row):
+# 強調表示用（行ごと背景）
+def highlight_row(row):
     name = row.name
     if name == "収入（手取り）":
         return ["background-color: #D7EEFF; font-weight: bold"] * len(row)
     if name in ["生活費", "住宅ローン", "管理費・修繕費", "教育費", "投資積立額", "支出合計"]:
         return ["background-color: #FFE4E1; font-weight: bold"] * len(row)
-    if name in ["年間収支", "累積貯蓄", "投資残高", "総資産"]:
-        return ["background-color: #E9FFE7; font-weight: bold"] * len(row)
+    # 資産系は淡いグリーンの背景、太字は「総資産」のみ
+    if name in ["年間収支", "累積貯蓄", "投資残高"]:
+        return ["background-color: #E9FFE7"] * len(row)
+    if name == "総資産":
+        return ["background-color: #DFF7DD; font-weight: bold"] * len(row)
     return [""] * len(row)
+
+
+# マイナス値の赤字表示
+def color_negative(v):
+    try:
+        return "color: #E11D48; font-weight: 700" if float(v) < 0 else ""
+    except Exception:
+        return ""
 
 # ヘッダー用の西暦
 years_header = df_show["西暦"].astype(int).values
@@ -327,7 +396,19 @@ df_body = df_show.drop(columns=["西暦"])
 df_t = df_body.T
 df_t.columns = years_header
 
-st.dataframe(df_t.style.apply(highlight, axis=1))
+# 「縦スクロール無し＝横だけ」になるように、高さを行数に合わせて動的に確保
+# 行数×35px + ヘッダー/余白分
+table_height = int((len(df_t.index) + 1) * 35 + 20)
+
+styler = (
+    df_t.style
+        .apply(highlight_row, axis=1)
+        .applymap(color_negative)
+        .format("{:,.0f}")  # 3桁カンマ区切り
+)
+
+st.dataframe(styler, height=table_height, use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ===============================
 # CSVダウンロード
@@ -338,7 +419,8 @@ st.download_button("CSVダウンロード", csv_data, "cashflow.csv", "text/csv"
 # ===============================
 # 資産・貯蓄・投資残高の推移グラフ（万円表示）
 # ===============================
-st.header("資産・貯蓄・投資残高の推移")
+st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.subheader("資産・貯蓄・投資残高の推移")
 
 fig, ax = plt.subplots(figsize=(10, 5))
 
@@ -353,12 +435,15 @@ ax.grid(True, linestyle="--", alpha=0.5)
 ax.legend()
 fig.tight_layout()
 st.pyplot(fig)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ===============================
 # モデルの前提説明（生活費・教育費）
 # ===============================
 st.markdown(
     """
+<div class="section-card">
+
 ### 生活費・教育費モデルの前提
 
 - **生活費**  
@@ -380,7 +465,10 @@ st.markdown(
 
 ※ 実際の家計・学校選択・進路によって金額は大きく変動します。  
 　本シミュレーションはあくまで目安であり、詳細なライフプラン作成時には個別の金額での再試算をおすすめします。
-"""
+
+</div>
+""",
+    unsafe_allow_html=True
 )
 
 # ===============================
