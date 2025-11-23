@@ -56,9 +56,7 @@ st.markdown(
         font-weight: 700 !important;
         border-bottom: 2px solid #111827 !important;
       }
-      /* 余計な縦スクロールバーが出ないように調整（高さはst.dataframe側で制御） */
       div[data-testid="stDataFrame"] > div { overflow-y: hidden !important; }
-      /* 見出し */
       h2, h3 { letter-spacing: .02em; }
     </style>
     """,
@@ -76,6 +74,7 @@ st.sidebar.header("基本情報")
 start_age = st.sidebar.number_input("現在の年齢", 20, 60, 40)
 start_year = datetime.today().year
 end_age = 65
+years = list(range(start_year, start_year + (end_age - start_age) + 1))
 
 # 配偶者（サイドバーに表示）
 has_spouse = st.sidebar.checkbox("配偶者あり")
@@ -90,6 +89,10 @@ if has_spouse:
     spouse_income = st.sidebar.number_input("配偶者の手取り年収（円）", 0, 30_000_000, 3_000_000)
 else:
     spouse_income = 0
+
+# インフレ率 & 賃金上昇率（基本情報の最下段）
+inflation = st.sidebar.slider("インフレ率（年%）", 0.0, 5.0, 1.0) / 100
+wage_growth = st.sidebar.slider("賃金上昇率（年%）", 0.0, 5.0, 1.0) / 100
 
 # ----------------------------
 # 支出（生活費・住宅関連）
@@ -121,7 +124,6 @@ children = st.sidebar.number_input("子どもの人数", 0, 3, 1)
 child_settings = []
 for i in range(int(children)):
     st.sidebar.subheader(f"子ども {i+1}")
-    # 誕生年ベースで入力（未来の年もOK）
     birth_year = st.sidebar.number_input(
         f"子ども{i+1}の誕生年（西暦）",
         start_year - 30,
@@ -143,7 +145,7 @@ for i in range(int(children)):
     dorm = st.sidebar.checkbox(f"子ども{i+1} 下宿する", key=f"dorm_{i}")
     child_settings.append(
         {
-            "birth_year": int(birth_year),  # 誕生年
+            "birth_year": int(birth_year),
             "school_type": school_type,
             "cram_month": cram_month,
             "uni": uni_type,
@@ -162,11 +164,35 @@ invest_principal = st.sidebar.number_input("投資元本（円）", 0, 100_000_0
 invest_month = st.sidebar.number_input("毎月積立額（円）", 0, 1_000_000, 30_000)
 invest_return = st.sidebar.slider("利回り（年率%）", 0.0, 15.0, 3.0) / 100
 
-# インフレ率
-inflation = st.sidebar.slider("インフレ率（年%）", 0.0, 5.0, 1.0) / 100
+# ----------------------------
+# 特別収入・特別支出（サイドバー最下部 / 万円単位）
+# ----------------------------
+st.sidebar.header("特別収入・特別支出（万円）")
+st.sidebar.caption("学資保険の払戻しや臨時出費などを年ごとに追加できます（万円単位・年額）。")
 
-# 賃金上昇率
-wage_growth = st.sidebar.slider("賃金上昇率（年%）", 0.0, 5.0, 1.0) / 100
+special_df = pd.DataFrame({
+    "西暦": years,
+    "特別収入": [0] * len(years),
+    "特別支出": [0] * len(years),
+})
+
+special_df = st.sidebar.data_editor(
+    special_df,
+    num_rows="fixed",
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        # intのまま表示フォーマットで「年」を付ける → 警告マーク対策
+        "西暦": st.column_config.NumberColumn("西暦", disabled=True, format="%d年", width="small"),
+        "特別収入": st.column_config.NumberColumn("特別収入", min_value=0, step=10, format="%d", width="small"),
+        "特別支出": st.column_config.NumberColumn("特別支出", min_value=0, step=10, format="%d", width="small"),
+    },
+    key="special_editor_sidebar",
+)
+
+# 万円 → 円へ変換して辞書化
+special_income_by_year = {int(k): int(v) * 10_000 for k, v in zip(special_df["西暦"], special_df["特別収入"])}
+special_expense_by_year = {int(k): int(v) * 10_000 for k, v in zip(special_df["西暦"], special_df["特別支出"])}
 
 # ===============================
 # 生活費プリセット（都市部・子ども人数別ざっくりモデル）
@@ -179,58 +205,37 @@ LIFE_TABLE = {
 }
 
 def get_life_cost(num_children: int) -> int:
-    """
-    子どもの人数に応じて生活費の基準額を変える。
-    子ども3人以上は3と同じ扱い。
-    """
     if life_cost_preset == "手入力":
         return life_cost_custom
-
-    n = int(num_children)
-    if n < 0:
-        n = 0
-    if n > 3:
-        n = 3
-
-    base = LIFE_TABLE[n][life_cost_preset]
-    return base
+    n = max(0, min(3, int(num_children)))
+    return LIFE_TABLE[n][life_cost_preset]
 
 # ===============================
 # 教育費モデル（すべて円）
 # ===============================
-PUBLIC_MH = 400_000   # 中高 公立（年額）
-PRIVATE_MH = 900_000  # 中高 私立（年額）
+PUBLIC_MH = 400_000
+PRIVATE_MH = 900_000
 UNI_COST = {
     "国公立大学": 800_000,
     "私立大学": 1_500_000,
     "専門学校": 1_100_000,
 }
 UNI_YEARS = {"国公立大学": 4, "私立大学": 4, "専門学校": 2}
-ENTRANCE_FEE = 300_000  # 入学金（初年度）
-DORM_COST = 800_000     # 下宿費（年額）
+ENTRANCE_FEE = 300_000
+DORM_COST = 800_000
 
 def education_cost_for_year(year_index: int) -> int:
-    """
-    year_index: 0 がシミュレーション開始年、その +1, +2 ... が以降の年
-    - 子どもの年齢 = （シミュレーション年の西暦） - 誕生年
-    - 中高の学費（公立/私立）は 12〜18歳で加算
-    - 塾・学費（月額）は 6〜22歳の間だけ加算（小1〜大学生くらい）
-    - 大学・専門は18歳以降に加算
-    """
     current_year = start_year + year_index
     total = 0
     for cs in child_settings:
         child_age = current_year - cs["birth_year"]
 
-        # 中学〜高校の学校費用（公立/私立）
         if 12 <= child_age <= 18:
             total += PRIVATE_MH if cs["school_type"] == "私立" else PUBLIC_MH
 
-        # 小1〜大学生くらいまでの塾・学費（月額）
         if 6 <= child_age <= 22 and cs["cram_month"] > 0:
             total += cs["cram_month"] * 12
 
-        # 大学・専門
         if cs["uni"] != "進学しない" and child_age >= 18:
             uy = UNI_YEARS[cs["uni"]]
             if 18 <= child_age < 18 + uy:
@@ -244,25 +249,24 @@ def education_cost_for_year(year_index: int) -> int:
 # ===============================
 # シミュレーション本体
 # ===============================
-years = list(range(start_year, start_year + (end_age - start_age) + 1))
 records = []
-
-cumulative = initial_savings     # 現在の貯蓄からスタート（現金・預金）
+cumulative = initial_savings
 invest_balance = invest_principal
 num_children = len(child_settings)
 
 for idx, year in enumerate(years):
     age = start_age + idx
-    if has_spouse and spouse_age is not None:
-        spouse_age_year = spouse_age + idx  # 現在の年齢＋経過年数
-    else:
-        spouse_age_year = None
+    spouse_age_year = spouse_age + idx if (has_spouse and spouse_age is not None) else None
 
-    # 収入（手取り）に賃金上昇率を適用
-    annual_income = int(
-        income * (1 + wage_growth) ** idx +
-        spouse_income * (1 + wage_growth) ** idx
-    )
+    # 収入（本人・配偶者を分解）
+    person_income = int(income * (1 + wage_growth) ** idx)
+    spouse_income_year = int(spouse_income * (1 + wage_growth) ** idx) if has_spouse else 0
+
+    # 特別収入（円）
+    special_income = int(special_income_by_year.get(year, 0))
+
+    # 収入合計
+    annual_income = person_income + spouse_income_year + special_income
 
     # 生活費（子どもの人数 & インフレ連動）
     base_life = get_life_cost(num_children)
@@ -272,61 +276,64 @@ for idx, year in enumerate(years):
     edu_cost = education_cost_for_year(idx)
 
     # ローンは残り年数を過ぎたら 0 円
-    if idx < loan_years:
-        annual_debt = debt_year
-    else:
-        annual_debt = 0
+    annual_debt = debt_year if idx < loan_years else 0
 
     # 投資積立（年額）
     invest_annual = invest_month * 12
 
-    # 純粋な「消費的支出」の合計（生活費＋住宅＋管理修繕＋教育）
-    pure_expense = life_cost + annual_debt + repair + edu_cost
+    # 特別支出（円）
+    special_expense = int(special_expense_by_year.get(year, 0))
 
-    # 投資積立まで含めたキャッシュアウト（実際に口座から出ていくお金）
+    # 純粋な「消費的支出」
+    pure_expense = life_cost + annual_debt + repair + edu_cost + special_expense
+
+    # 投資積立まで含めたキャッシュアウト
     annual_expense = pure_expense + invest_annual
 
-    # 年間収支（投資積立も考慮した後の増減）
+    # 年間収支
     annual_balance = annual_income - annual_expense
 
     # 現金ベースの累積貯蓄
     cumulative += annual_balance
 
-    # 投資残高：昨年までの残高＋リターン＋今年の積立
+    # 投資残高：複利＋積立
     invest_balance = invest_balance * (1 + invest_return) + invest_annual
 
-    # 累積貯蓄がマイナスになった場合は、投資残高から補填（切り崩し）
+    # 累積貯蓄がマイナスになった場合は投資残高から補填（切り崩し）
     if cumulative < 0:
         deficit = -cumulative
         invest_balance -= deficit
         cumulative = 0
 
-    # 総資産＝現金（累積貯蓄）＋投資残高
+    # 総資産
     total_asset = cumulative + invest_balance
 
-    # この年のレコード用 dict を作成
     row = {
         "年齢": age,
         "西暦": year,
         "配偶者年齢": spouse_age_year,
-        "収入（手取り）": annual_income,
+        "本人収入": person_income,
+        "特別収入": special_income,
+        "収入合計": annual_income,
         "生活費": life_cost,
         "住宅ローン": annual_debt,
         "管理費・修繕費": repair,
         "教育費": edu_cost,
         "投資積立額": invest_annual,
-        "支出合計": annual_expense,       # 投資積立込みのキャッシュアウト
+        "特別支出": special_expense,
+        "支出合計": annual_expense,
         "年間収支": annual_balance,
         "累積貯蓄": cumulative,
         "投資残高": invest_balance,
         "総資産": total_asset,
     }
 
-    # 子どもごとの年齢を追加（マイナスは0歳扱いで表示）
+    if has_spouse:
+        row["配偶者収入"] = spouse_income_year
+
     for j, cs in enumerate(child_settings):
         child_age_raw = year - cs["birth_year"]
-        display_age = max(0, child_age_raw)
-        row[f"子{j+1}年齢"] = display_age
+        row[f"子{j+1}年齢"] = max(0, child_age_raw)
 
     records.append(row)
 
@@ -338,73 +345,88 @@ df = pd.DataFrame(records)
 st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.subheader("キャッシュフロー表")
 
-# 子ども年齢列を動的に生成
 child_age_cols = [f"子{i+1}年齢" for i in range(num_children)]
-
-# 「配偶者年齢」はいったん含めておき、あとで必要に応じて削除する
 base_cols = ["西暦", "年齢", "配偶者年齢"]
 
-rest_cols = [
-    "収入（手取り）", "生活費", "住宅ローン", "管理費・修繕費",
-    "教育費", "投資積立額", "支出合計", "年間収支",
-    "累積貯蓄", "投資残高", "総資産",
+# 収入ブロック
+income_cols = ["本人収入"] + (["配偶者収入"] if has_spouse else []) + ["特別収入", "収入合計"]
+
+# 支出ブロック
+expense_cols = [
+    "生活費", "住宅ローン", "管理費・修繕費",
+    "教育費", "投資積立額", "特別支出", "支出合計",
 ]
 
+# 資産ブロック
+asset_cols = ["年間収支", "累積貯蓄", "投資残高", "総資産"]
+
+rest_cols = income_cols + expense_cols + asset_cols
 show_cols = base_cols + child_age_cols + rest_cols
 
 df_show = df[show_cols].copy()
 
-# 配偶者なしの場合は「配偶者年齢」列を完全に削除
-if not has_spouse and "配偶者年齢" in df_show.columns:
-    df_show = df_show.drop(columns=["配偶者年齢"])
+# 配偶者なしの場合は「配偶者年齢」「配偶者収入」を削除
+if not has_spouse:
+    if "配偶者年齢" in df_show.columns:
+        df_show = df_show.drop(columns=["配偶者年齢"])
+    if "配偶者収入" in df_show.columns:
+        df_show = df_show.drop(columns=["配偶者収入"])
 
-# 配偶者年齢 と 西暦 以外は数値として整形
 numeric_cols = [c for c in df_show.columns if c not in ["配偶者年齢", "西暦"]]
 df_show[numeric_cols] = df_show[numeric_cols].round(0).astype(int)
 
 st.caption("※ 収入は手取りベース、金額の単位はすべて円です。投資積立額も支出に含めた後の年間収支・累積貯蓄を表示しています。")
 
-# 強調表示用（行ごと背景）
 def highlight_row(row):
     name = row.name
-    if name == "収入（手取り）":
-        return ["background-color: #D7EEFF; font-weight: bold"] * len(row)
-    if name in ["生活費", "住宅ローン", "管理費・修繕費", "教育費", "投資積立額", "支出合計"]:
-        return ["background-color: #FFE4E1; font-weight: bold"] * len(row)
-    # 資産系は淡いグリーンの背景、太字は「総資産」のみ
-    if name in ["年間収支", "累積貯蓄", "投資残高"]:
-        return ["background-color: #E9FFE7"] * len(row)
-    if name == "総資産":
-        return ["background-color: #DFF7DD; font-weight: bold"] * len(row)
+    INCOME_ROWS = ["本人収入", "配偶者収入", "特別収入", "収入合計"]
+    EXPENSE_ROWS = ["生活費", "住宅ローン", "管理費・修繕費", "教育費", "投資積立額", "特別支出", "支出合計"]
+    ASSET_ROWS = ["年間収支", "累積貯蓄", "投資残高", "総資産"]
+
+    if name in INCOME_ROWS:
+        style = "background-color: #D7EEFF;"
+        if name == "収入合計":
+            style += " font-weight: 800 !important"
+        return [style] * len(row)
+
+    if name in EXPENSE_ROWS:
+        style = "background-color: #FFE4E1; font-weight: 700;"
+        if name == "支出合計":
+            style += " font-weight: 800 !important"
+        return [style] * len(row)
+
+    if name in ASSET_ROWS:
+        style = "background-color: #E9FFE7;"
+        if name == "総資産":
+            style = "background-color: #DFF7DD; font-weight: 800 !important"
+        return [style] * len(row)
+
     return [""] * len(row)
 
-
-# マイナス値の赤字表示
 def color_negative(v):
     try:
         return "color: #E11D48; font-weight: 700" if float(v) < 0 else ""
     except Exception:
         return ""
 
-# ヘッダー用の西暦
+def bold_key_rows(row):
+    key_rows = {"収入合計", "支出合計", "総資産"}
+    if row.name in key_rows:
+        return ["font-weight: 800 !important"] * len(row)
+    return [""] * len(row)
+
 years_header = df_show["西暦"].astype(int).values
-
-# 表からは西暦列を削除（年齢から始まる）
-df_body = df_show.drop(columns=["西暦"])
-
-# 転置して 行＝項目、列＝西暦
-df_t = df_body.T
+df_t = df_show.drop(columns=["西暦"]).T
 df_t.columns = years_header
 
-# 「縦スクロール無し＝横だけ」になるように、高さを行数に合わせて動的に確保
-# 行数×35px + ヘッダー/余白分
 table_height = int((len(df_t.index) + 1) * 35 + 20)
 
 styler = (
     df_t.style
         .apply(highlight_row, axis=1)
+        .apply(bold_key_rows, axis=1)
         .applymap(color_negative)
-        .format("{:,.0f}")  # 3桁カンマ区切り
+        .format("{:,.0f}")
 )
 
 st.dataframe(styler, height=table_height, use_container_width=True)
@@ -423,8 +445,7 @@ st.markdown('<div class="section-card">', unsafe_allow_html=True)
 st.subheader("資産・貯蓄・投資残高の推移")
 
 fig, ax = plt.subplots(figsize=(10, 5))
-
-yen_to_10k = 10_000  # 万円単位に変換
+yen_to_10k = 10_000
 
 ax.plot(df["年齢"], df["累積貯蓄"] / yen_to_10k, label="累積貯蓄（現金）")
 ax.plot(df["年齢"], df["投資残高"] / yen_to_10k, label="投資残高")
@@ -487,9 +508,9 @@ if logo_path.exists():
         <style>
         .fixed-logo {{
             position: fixed;
-            top: 70px;     /* 上からの距離 */
-            right: 40px;   /* 右からの距離 */
-            width: 100px;  /* ロゴの大きさ */
+            top: 70px;
+            right: 40px;
+            width: 100px;
             z-index: 9999;
             pointer-events: none;
         }}
