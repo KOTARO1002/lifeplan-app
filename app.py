@@ -11,8 +11,10 @@ from io import BytesIO
 import hashlib
 
 from reportlab.lib.pagesizes import A3, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer, Image, Paragraph
 from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
 import reportlab.pdfbase.pdfdoc as pdfdoc
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -31,6 +33,25 @@ pdfdoc.md5 = _patched_md5
 # ========================
 BASE_DIR = Path(__file__).parent
 font_path = BASE_DIR / "fonts" / "ipaexg.ttf"  # フォントファイルのパス
+logo_path = BASE_DIR / "logo_sh.png"
+
+# 生活費プリセットを「統計値ベース + 10%」に上乗せする係数
+LIFE_PRESET_UPLIFT = 1.10
+
+# 生活費（消費支出）の内訳（目安）
+# ※ 総務省家計調査の費目構成を参考にした「割合モデル」です（合計=100%）
+LIFE_BREAKDOWN_RATIOS = {
+    "食料": 0.24,
+    "住居（家賃等）": 0.06,
+    "光熱・水道": 0.06,
+    "家具・家事用品": 0.04,
+    "被服及び履物": 0.04,
+    "保健医療": 0.04,
+    "交通・通信": 0.14,
+    "教養娯楽": 0.12,
+    "教育": 0.03,
+    "その他": 0.23,
+}
 
 # Matplotlib（画面用）
 fm.fontManager.addfont(str(font_path))
@@ -215,11 +236,47 @@ LIFE_TABLE = {
     3: {"ミニマム": 3_400_000, "標準": 4_000_000, "ゆとり": 4_600_000},
 }
 
-def get_life_cost(num_children: int) -> int:
-    if life_cost_preset == "手入力":
-        return life_cost_custom
+def get_life_cost_raw(num_children: int) -> int:
+    """生活費プリセット（統計ベースそのまま・年額）"""
     n = max(0, min(3, int(num_children)))
-    return LIFE_TABLE[n][life_cost_preset]
+    return int(LIFE_TABLE[n][life_cost_preset])
+
+def get_life_cost(num_children: int) -> int:
+    """生活費（年額）: プリセットは統計ベースに対して+10%上乗せ"""
+    if life_cost_preset == "手入力":
+        return int(life_cost_custom)
+    base = get_life_cost_raw(num_children)
+    return int(round(base * LIFE_PRESET_UPLIFT))
+
+def build_life_breakdown(annual_life_cost: int) -> pd.DataFrame:
+    rows = []
+    for k, ratio in LIFE_BREAKDOWN_RATIOS.items():
+        yen = int(round(annual_life_cost * ratio))
+        rows.append({"費目": k, "年額（円）": yen, "月額（円）": int(round(yen / 12))})
+    df_bd = pd.DataFrame(rows)
+    # 端数調整で合計がズレることがあるので、合計行を最後に付与
+    df_bd.loc[len(df_bd)] = {
+        "費目": "合計",
+        "年額（円）": int(df_bd["年額（円）"].sum()),
+        "月額（円）": int(round(df_bd["年額（円）"].sum() / 12)),
+    }
+    return df_bd
+
+# サイドバー: 生活費プリセットの内訳表示（目安）
+if life_cost_preset != "手入力":
+    with st.sidebar.expander("生活費プリセットの内訳（目安）"):
+        raw = get_life_cost_raw(len(child_settings))
+        uplifted = int(round(raw * LIFE_PRESET_UPLIFT))
+        st.caption(
+            "※ 統計ベース（年額）に対して、このアプリでは+10%上乗せをデフォルトにしています。"
+        )
+        st.write(f"統計ベース: {raw:,.0f}円 / 年 → 上乗せ後: {uplifted:,.0f}円 / 年")
+        bd = build_life_breakdown(uplifted)
+        st.dataframe(
+            bd.style.format({"年額（円）": "{:,.0f}", "月額（円）": "{:,.0f}"}),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 # ===============================
 # 教育費モデル
@@ -405,7 +462,7 @@ table_height = int((len(df_t.index) + 1) * 35 + 20)
 # ===============================
 # PDF生成関数（A3横・上下2段）
 # ===============================
-def create_cashflow_pdf(df_t):
+def create_cashflow_pdf(df_t: pd.DataFrame, inputs_summary: dict, logo_path: Path):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -444,7 +501,107 @@ def create_cashflow_pdf(df_t):
         ("TOPPADDING", (0, 0), (-1, 0), 4),
     ]
 
+    styles = getSampleStyleSheet()
+    style_normal = ParagraphStyle(
+        "jp_normal",
+        parent=styles["Normal"],
+        fontName="IPAexGothic",
+        fontSize=8,
+        leading=10,
+    )
+    style_h1 = ParagraphStyle(
+        "jp_h1",
+        parent=styles["Heading1"],
+        fontName="IPAexGothic",
+        fontSize=14,
+        leading=16,
+        spaceAfter=6,
+    )
+    style_h2 = ParagraphStyle(
+        "jp_h2",
+        parent=styles["Heading2"],
+        fontName="IPAexGothic",
+        fontSize=10.5,
+        leading=12,
+        spaceBefore=8,
+        spaceAfter=4,
+    )
+
+    def _fmt(v) -> str:
+        if v is None:
+            return "-"
+        if isinstance(v, (int, float)):
+            return f"{int(v):,}"
+        return str(v)
+
     elements = []
+
+    # --- ヘッダー（タイトル + ロゴ） ---
+    title = Paragraph("ライフプランシミュレーション（キャッシュフロー）", style_h1)
+
+    logo_img = ""
+    if logo_path is not None and Path(logo_path).exists():
+        img = Image(str(logo_path))
+        img.drawWidth = 28 * mm
+        img.drawHeight = img.drawWidth * (img.imageHeight / img.imageWidth)
+        logo_img = img
+
+    header_tbl = Table(
+        [[title, logo_img]],
+        colWidths=[doc.width * 0.75, doc.width * 0.25],
+    )
+    header_tbl.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    elements.append(header_tbl)
+
+    # --- 設定内容（前提条件） ---
+    elements.append(Paragraph("設定内容（前提条件）", style_h2))
+
+    kv_rows = []
+    for section, payload in inputs_summary.items():
+        # セクション見出し
+        kv_rows.append([Paragraph(f"<b>{section}</b>", style_normal), ""])
+        if isinstance(payload, dict):
+            for k, v in payload.items():
+                kv_rows.append([
+                    Paragraph(str(k), style_normal),
+                    Paragraph(_fmt(v), style_normal),
+                ])
+        elif isinstance(payload, (list, tuple)):
+            if len(payload) == 0:
+                kv_rows.append([Paragraph(" ", style_normal), Paragraph("なし", style_normal)])
+            else:
+                for line in payload:
+                    kv_rows.append([Paragraph(" ", style_normal), Paragraph(_fmt(line), style_normal)])
+        else:
+            kv_rows.append([Paragraph(" ", style_normal), Paragraph(_fmt(payload), style_normal)])
+
+    kv_tbl = Table(kv_rows, colWidths=[doc.width * 0.28, doc.width * 0.72])
+    kv_tbl.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, -1), "IPAexGothic"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F1F5F9")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    elements.append(kv_tbl)
+    elements.append(Spacer(1, 10))
 
     # --- 上段（前半列） ---
     data_left = [["項目"] + [str(c) for c in df_left.columns]]
@@ -521,14 +678,88 @@ def create_cashflow_pdf(df_t):
     buffer.seek(0)
     return buffer
 
-# 📄 PDFダウンロードボタン
-pdf_buffer = create_cashflow_pdf(df_t)
-st.download_button(
-    label="PDFをダウンロード",
-    data=pdf_buffer.getvalue(),
-    file_name="cashflow_a3_landscape.pdf",
-    mime="application/pdf",
-)
+# ===============================
+# PDF生成（手動トリガー）
+# ===============================
+def make_df_key(df: pd.DataFrame) -> str:
+    core = pd.util.hash_pandas_object(df, index=True).values.tobytes()
+    meta = (str(list(df.index)) + str(list(df.columns))).encode("utf-8")
+    return hashlib.sha256(meta + core).hexdigest()
+
+def _yen(v: int) -> str:
+    return f"{int(v):,}円"
+
+# PDFに載せる「設定内容」まとめ
+base_life_raw = get_life_cost_raw(num_children) if life_cost_preset != "手入力" else life_cost_custom
+base_life_uplifted = get_life_cost(num_children) if life_cost_preset != "手入力" else life_cost_custom
+
+child_lines = []
+for i, cs in enumerate(child_settings, start=1):
+    child_lines.append(
+        f"子ども{i}: 誕生年 {cs['birth_year']}年 / 中高 {cs['school_type']} / 塾・学費 {_yen(cs['cram_month']*12)}(年) / 進学先 {cs['uni']} / 下宿 {'あり' if cs['dorm'] else 'なし'}"
+    )
+
+special_lines = []
+for y in years:
+    si = int(special_income_by_year.get(y, 0))
+    se = int(special_expense_by_year.get(y, 0))
+    if si != 0 or se != 0:
+        special_lines.append(f"{y}年: 特別収入 {_yen(si)} / 特別支出 {_yen(se)}")
+
+pdf_inputs = {
+    "基本情報": {
+        "現在の年齢": f"{start_age}歳",
+        "想定終了年齢": f"{end_age}歳",
+        "配偶者": "あり" if has_spouse else "なし",
+        "配偶者年齢": f"{spouse_age}歳" if has_spouse and spouse_age is not None else "-",
+        "本人手取り年収": _yen(income),
+        "配偶者手取り年収": _yen(spouse_income) if has_spouse else "-",
+        "インフレ率": f"{inflation*100:.1f}%",
+        "賃金上昇率": f"{wage_growth*100:.1f}%",
+    },
+    "支出関連": {
+        "生活費（プリセット）": life_cost_preset,
+        "生活費ベース（統計）": _yen(base_life_raw) if life_cost_preset != "手入力" else "-",
+        "生活費ベース（+10%後）": _yen(base_life_uplifted) if life_cost_preset != "手入力" else _yen(life_cost_custom),
+        "住宅ローン（月額）": _yen(debt_month),
+        "住宅ローン残年数": f"{loan_years}年",
+        "管理費・修繕費（月額）": _yen(repair_month),
+    },
+    "教育費": child_lines,
+    "投資・貯蓄": {
+        "現在の貯蓄額": _yen(initial_savings),
+        "投資元本": _yen(invest_principal),
+        "毎月積立額": _yen(invest_month),
+        "利回り（年率）": f"{invest_return*100:.1f}%",
+    },
+    "特別収入・特別支出": special_lines,
+}
+
+current_key = make_df_key(df_t)
+
+if st.session_state.get("pdf_key") != current_key:
+    st.session_state["pdf_key"] = current_key
+    st.session_state["pdf_bytes"] = None
+
+col_a, col_b, col_c = st.columns([1, 1, 2])
+with col_a:
+    if st.button("PDFを生成する", key="btn_make_pdf"):
+        with st.spinner("PDFを作成中…"):
+            st.session_state["pdf_bytes"] = create_cashflow_pdf(df_t, pdf_inputs, logo_path).getvalue()
+with col_b:
+    if st.button("PDFをクリア", key="btn_clear_pdf"):
+        st.session_state["pdf_bytes"] = None
+with col_c:
+    if st.session_state.get("pdf_bytes"):
+        st.download_button(
+            label="PDFをダウンロード",
+            data=st.session_state["pdf_bytes"],
+            file_name="cashflow_a3_landscape.pdf",
+            mime="application/pdf",
+            key="btn_download_pdf",
+        )
+    else:
+        st.caption("※ 先に「PDFを生成する」を押してください。")
 
 # 表表示
 styler = (
@@ -572,10 +803,10 @@ st.markdown(
 
 - **生活費**  
   - 総務省「家計調査」による勤労者世帯（2人以上）の消費支出データをベースに、都市部（大阪圏）の水準を参考にしたモデルです。  
-  - 「ミニマム」：統計値のおおよそ80〜85％程度（かなり節約寄り）  
-  - 「標準」　　：統計値に近い水準（一般的な暮らしイメージ）  
-  - 「ゆとり」　：統計値の115〜120％程度（外食やレジャー多め）  
+  - 体感との差が出にくいように、**このアプリでは統計ベースに対して +10% 上乗せした金額**をプリセットの起点にしています。  
+  - 「ミニマム」：節約寄り / 「標準」：一般的 / 「ゆとり」：外食・レジャー多め  
   - 子どもの人数（0〜3人）に応じて世帯の生活費が段階的に増える前提としています。
+  - 参考: 費目別の目安内訳（割合モデル）をサイドバー内「生活費プリセットの内訳（目安）」に表示しています。
 
 - **教育費（中学校〜高校）**  
   - 文部科学省「子供の学習費調査」などを参考に、  
@@ -598,8 +829,6 @@ st.markdown(
 # ===============================
 # 右上固定ロゴ表示
 # ===============================
-logo_path = BASE_DIR / "logo_sh.png"
-
 def load_logo_base64(path: Path) -> str:
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
