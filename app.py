@@ -11,8 +11,12 @@ from io import BytesIO
 import hashlib
 
 from reportlab.lib.pagesizes import A3, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer, Image, Paragraph
+from reportlab.platypus.flowables import KeepInFrame
 from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 import reportlab.pdfbase.pdfdoc as pdfdoc
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -31,6 +35,25 @@ pdfdoc.md5 = _patched_md5
 # ========================
 BASE_DIR = Path(__file__).parent
 font_path = BASE_DIR / "fonts" / "ipaexg.ttf"  # フォントファイルのパス
+logo_path = BASE_DIR / "logo_sh.png"
+
+# 生活費プリセットを「統計値ベース + 10%」に上乗せする係数
+LIFE_PRESET_UPLIFT = 1.10
+
+# 生活費（消費支出）の内訳（目安）
+# ※ 総務省家計調査の費目構成を参考にした「割合モデル」です（合計=100%）
+LIFE_BREAKDOWN_RATIOS = {
+    "食料": 0.24,
+    "住居（家賃以外）": 0.06,
+    "光熱・水道": 0.06,
+    "家具・家事用品": 0.04,
+    "被服及び履物": 0.04,
+    "保健医療": 0.04,
+    "交通・通信": 0.14,
+    "教養娯楽": 0.12,
+    "教育": 0.03,
+    "その他": 0.23,
+}
 
 # Matplotlib（画面用）
 fm.fontManager.addfont(str(font_path))
@@ -215,11 +238,47 @@ LIFE_TABLE = {
     3: {"ミニマム": 3_400_000, "標準": 4_000_000, "ゆとり": 4_600_000},
 }
 
-def get_life_cost(num_children: int) -> int:
-    if life_cost_preset == "手入力":
-        return life_cost_custom
+def get_life_cost_raw(num_children: int) -> int:
+    """生活費プリセット（統計ベースそのまま・年額）"""
     n = max(0, min(3, int(num_children)))
-    return LIFE_TABLE[n][life_cost_preset]
+    return int(LIFE_TABLE[n][life_cost_preset])
+
+def get_life_cost(num_children: int) -> int:
+    """生活費（年額）: プリセットは統計ベースに対して+10%上乗せ"""
+    if life_cost_preset == "手入力":
+        return int(life_cost_custom)
+    base = get_life_cost_raw(num_children)
+    return int(round(base * LIFE_PRESET_UPLIFT))
+
+def build_life_breakdown(annual_life_cost: int) -> pd.DataFrame:
+    rows = []
+    for k, ratio in LIFE_BREAKDOWN_RATIOS.items():
+        yen = int(round(annual_life_cost * ratio))
+        rows.append({"費目": k, "年額（円）": yen, "月額（円）": int(round(yen / 12))})
+    df_bd = pd.DataFrame(rows)
+    # 端数調整で合計がズレることがあるので、合計行を最後に付与
+    df_bd.loc[len(df_bd)] = {
+        "費目": "合計",
+        "年額（円）": int(df_bd["年額（円）"].sum()),
+        "月額（円）": int(round(df_bd["年額（円）"].sum() / 12)),
+    }
+    return df_bd
+
+# サイドバー: 生活費プリセットの内訳表示（目安）
+if life_cost_preset != "手入力":
+    with st.sidebar.expander("生活費プリセットの内訳（目安）"):
+        raw = get_life_cost_raw(len(child_settings))
+        uplifted = int(round(raw * LIFE_PRESET_UPLIFT))
+        st.caption(
+            "※ 統計ベース（年額）に対して、このアプリでは+10%上乗せをデフォルトにしています。"
+        )
+        st.write(f"統計ベース: {raw:,.0f}円 / 年 → 上乗せ後: {uplifted:,.0f}円 / 年")
+        bd = build_life_breakdown(uplifted)
+        st.dataframe(
+            bd.style.format({"年額（円）": "{:,.0f}", "月額（円）": "{:,.0f}"}),
+            use_container_width=True,
+            hide_index=True,
+        )
 
 # ===============================
 # 教育費モデル
@@ -403,132 +462,344 @@ df_t.columns = years_header
 table_height = int((len(df_t.index) + 1) * 35 + 20)
 
 # ===============================
-# PDF生成関数（A3横・上下2段）
+# PDF生成関数（A3横・1枚固定 / 右サイドバー / 年数で自動スケール）
 # ===============================
-def create_cashflow_pdf(df_t):
+def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: Path):
+    """A3横1枚に、左にキャッシュフロー表（年を行）、右に条件サイドバーを配置して出力する。
+
+    - 金額は万円（端数四捨五入）
+    - 年数に応じてフォント＆セル高さを自動調整（20年なら大きく、40年でも崩れない）
+    - 最後に KeepInFrame(mode="shrink") をかけ、絶対に1枚に収める
+    """
     buffer = BytesIO()
+    W, H = landscape(A3)
+
     doc = SimpleDocTemplate(
         buffer,
         pagesize=landscape(A3),
-        rightMargin=20,
-        leftMargin=20,
-        topMargin=20,
-        bottomMargin=20,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=10 * mm,
+        bottomMargin=10 * mm,
+    )
+    avail_w = W - doc.leftMargin - doc.rightMargin
+    styles = getSampleStyleSheet()
+
+    # -------------------------
+    # 表用データ（年を行）
+    # -------------------------
+    df_y = df_show.copy()
+    if "西暦" not in df_y.columns:
+        raise ValueError("df_show に '西暦' 列が必要です。")
+
+    df_y = df_y.rename(columns={"西暦": "年", "年齢": "本人年齢"})
+    child_cols = [c for c in df_y.columns if c.startswith("子") and c.endswith("年齢")]
+
+    # 住宅費は合算して列数を圧縮（安定して1枚に収める）
+    if "住宅ローン" in df_y.columns and "管理費・修繕費" in df_y.columns:
+        df_y["住宅費"] = df_y["住宅ローン"] + df_y["管理費・修繕費"]
+    else:
+        df_y["住宅費"] = 0
+
+    # PDF表に出す列（特別収入は収入合計に含まれるので表には出さない）
+    money_cols = ["収入合計", "生活費", "住宅費", "教育費", "投資積立額", "特別支出", "年間収支", "総資産"]
+    cols = ["年", "本人年齢"] + child_cols + [c for c in money_cols if c in df_y.columns]
+    out = df_y[cols].copy()
+
+    # 金額を万円へ
+    YEN_TO_10K = 10_000
+    for c in out.columns:
+        if c in ("年", "本人年齢") or c.endswith("年齢"):
+            continue
+        out[c] = (pd.to_numeric(out[c], errors="coerce") / YEN_TO_10K).round(0).fillna(0).astype(int)
+
+    n_years = len(out)
+    n_children = len(child_cols)
+
+    # -------------------------
+    # 年数で自動スケール（拡大も対応）
+    # -------------------------
+    # 子ども列が増えると横が厳しくなるので少しペナルティ
+    child_penalty = 0.0
+    if n_children >= 3:
+        child_penalty = 0.6
+    elif n_children == 2:
+        child_penalty = 0.3
+    elif n_children == 0:
+        child_penalty = -0.2
+
+    if n_years <= 22:
+        tbl_header_fs, tbl_body_fs = 10.6 - child_penalty, 10.1 - child_penalty
+        cell_pad = 5.2
+        sb_fs, sb_head_fs = 10.2, 11.2
+        sidebar_w = 90 * mm
+    elif n_years <= 32:
+        tbl_header_fs, tbl_body_fs = 9.8 - child_penalty, 9.4 - child_penalty
+        cell_pad = 4.6
+        sb_fs, sb_head_fs = 9.8, 10.8
+        sidebar_w = 86 * mm
+    else:
+        tbl_header_fs, tbl_body_fs = 9.2 - child_penalty, 8.8 - child_penalty
+        cell_pad = 3.9
+        sb_fs, sb_head_fs = 9.6, 10.4
+        sidebar_w = 82 * mm
+
+    gap = 6 * mm
+    table_w = avail_w - sidebar_w - gap
+
+    # -------------------------
+    # サイドバー（条件欄）
+    # -------------------------
+    sb_style = ParagraphStyle(
+        "sb",
+        parent=styles["Normal"],
+        fontName="IPAexGothic",
+        fontSize=sb_fs,
+        leading=sb_fs + 2,
+        spaceAfter=2,
+    )
+    sb_head = ParagraphStyle(
+        "sb_head",
+        parent=styles["Normal"],
+        fontName="IPAexGothic",
+        fontSize=sb_head_fs,
+        leading=sb_head_fs + 2,
+        spaceAfter=2,
     )
 
-    cols = list(df_t.columns)
-    if len(cols) <= 20:
-        mid = len(cols)
-    else:
-        mid = len(cols) // 2
+    def P(txt: str, head: bool = False):
+        return Paragraph(txt, sb_head if head else sb_style)
 
-    cols_left = cols[:mid]
-    cols_right = cols[mid:]
+    sidebar_blocks = []
+    for section, payload in sidebar_inputs.items():
+        sidebar_blocks.append(P(f"<b>{section}</b>", head=True))
+        if isinstance(payload, (list, tuple)):
+            if len(payload) == 0:
+                sidebar_blocks.append(P("なし"))
+            else:
+                for line in payload:
+                    sidebar_blocks.append(P(str(line)))
+        elif isinstance(payload, dict):
+            # dictの場合は k:v を1行ずつ
+            if len(payload) == 0:
+                sidebar_blocks.append(P("なし"))
+            else:
+                for k, v in payload.items():
+                    sidebar_blocks.append(P(f"{k}：{v}"))
+        else:
+            sidebar_blocks.append(P(str(payload)))
+        sidebar_blocks.append(Spacer(1, 2 * mm))
 
-    df_left = df_t[cols_left]
-    df_right = df_t[cols_right]
+    sidebar_frame = KeepInFrame(sidebar_w, 9999, sidebar_blocks, mode="shrink", hAlign="LEFT", vAlign="TOP")
+    sidebar_box = Table([[sidebar_frame]], colWidths=[sidebar_w])
+    sidebar_box.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+        ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#CBD5E1")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]))
 
-    INCOME_ROWS = ["本人収入", "配偶者収入", "特別収入", "収入合計"]
-    EXPENSE_ROWS = ["生活費", "住宅ローン", "管理費・修繕費", "教育費", "投資積立額", "特別支出", "支出合計"]
-    ASSET_ROWS = ["年間収支", "累積貯蓄", "投資残高", "総資産"]
+    # -------------------------
+    # Table（左）
+    # -------------------------
+    header = out.columns.tolist()
+    data = [header]
+    for _, r in out.iterrows():
+        row = []
+        for c in header:
+            v = r[c]
+            if c in ("年", "本人年齢"):
+                row.append(str(int(v)))
+            elif c.endswith("年齢"):
+                row.append("" if pd.isna(v) else str(v))
+            else:
+                row.append(f"{int(v):,}")
+        data.append(row)
 
-    common_style = [
+    # 列幅：年・年齢は固定、残りは均等
+    fixed_map = {"年": 14 * mm, "本人年齢": 13 * mm}
+    for cc in child_cols:
+        fixed_map[cc] = 12 * mm
+
+    fixed_sum = sum(fixed_map.get(c, 0) for c in header if c in fixed_map)
+    flex_cols = [c for c in header if c not in fixed_map]
+    flex_w = (table_w - fixed_sum) / max(len(flex_cols), 1)
+    col_widths = [fixed_map.get(c, flex_w) for c in header]
+
+    tbl = Table(data, colWidths=col_widths, repeatRows=1)
+    ts = TableStyle([
         ("FONT", (0, 0), (-1, -1), "IPAexGothic"),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("FONTSIZE", (0, 0), (-1, 0), tbl_header_fs),
+        ("FONTSIZE", (0, 1), (-1, -1), tbl_body_fs),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#94A3B8")),
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B1220")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
-        ("ALIGN", (0, 0), (0, -1), "LEFT"),
-        ("FONTSIZE", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 4),
-        ("TOPPADDING", (0, 0), (-1, 0), 4),
-    ]
+        ("ALIGN", (0, 0), (len(child_cols) + 1, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), cell_pad),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), cell_pad),
+    ])
 
-    elements = []
+    def col_ix(name: str) -> int:
+        return header.index(name)
 
-    # --- 上段（前半列） ---
-    data_left = [["項目"] + [str(c) for c in df_left.columns]]
-    row_labels = []
+    # 列色（収入/支出/資産）
+    if "収入合計" in header:
+        ts.add("BACKGROUND", (col_ix("収入合計"), 1), (col_ix("収入合計"), -1), colors.HexColor("#D7EEFF"))
+    for c in ("生活費", "住宅費", "教育費", "投資積立額", "特別支出"):
+        if c in header:
+            ts.add("BACKGROUND", (col_ix(c), 1), (col_ix(c), -1), colors.HexColor("#FFEFEF"))
+    for c in ("年間収支", "総資産"):
+        if c in header:
+            ts.add("BACKGROUND", (col_ix(c), 1), (col_ix(c), -1), colors.HexColor("#E8F7E6"))
 
-    for idx, row in df_left.iterrows():
-        row_labels.append(idx)
-        row_vals = []
-        for v in row.values:
-            try:
-                row_vals.append(f"{float(v):,.0f}")
-            except Exception:
-                row_vals.append(str(v))
-        data_left.append([str(idx)] + row_vals)
+    # ゼブラ
+    for i in range(1, len(data)):
+        if i % 2 == 0:
+            ts.add("BACKGROUND", (0, i), (-1, i), colors.HexColor("#F8FAFC"))
 
-    tbl_left = Table(data_left, repeatRows=1)
-    style_left = TableStyle(list(common_style))
+    tbl.setStyle(ts)
 
-    for i, label in enumerate(row_labels, start=1):
-        bg = None
-        if label in INCOME_ROWS:
-            bg = colors.HexColor("#D7EEFF")
-        elif label in EXPENSE_ROWS:
-            bg = colors.HexColor("#FFE4E1")
-        elif label in ASSET_ROWS:
-            bg = colors.HexColor("#E9FFE7")
-            if label == "総資産":
-                bg = colors.HexColor("#DFF7DD")
-        if bg:
-            style_left.add("BACKGROUND", (0, i), (-1, i), bg)
+    # -------------------------
+    # メイン行（左：表 / 右：サイドバー）
+    # -------------------------
+    main_row = Table([[tbl, "", sidebar_box]], colWidths=[table_w, gap, sidebar_w])
+    main_row.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
 
-        if label in ["収入合計", "支出合計", "総資産"]:
-            style_left.add("FONTSIZE", (0, i), (-1, i), 6.5)
+    # -------------------------
+    # ヘッダー（タイトル左上 / ロゴ右上）
+    # -------------------------
+    def draw_header(canvas, _doc):
+        canvas.saveState()
+        canvas.setFont("IPAexGothic", 20)
+        canvas.drawString(doc.leftMargin, H - 14 * mm, "ライフプランシミュレーション")
+        canvas.setFont("IPAexGothic", 10.5)
+        canvas.drawString(doc.leftMargin, H - 21 * mm, f"金額：万円（端数四捨五入） / {n_years}年")
 
-    tbl_left.setStyle(style_left)
-    elements.append(tbl_left)
-    elements.append(Spacer(1, 16))
+        # ロゴ（縦横比維持）
+        try:
+            if logo_path is not None and Path(logo_path).exists():
+                ir = ImageReader(str(logo_path))
+                iw, ih = ir.getSize()
+                box_w, box_h = 58 * mm, 16 * mm
+                scale = min(box_w / iw, box_h / ih)
+                dw, dh = iw * scale, ih * scale
+                x = W - doc.rightMargin - dw
+                y = H - 12 * mm - dh
+                canvas.drawImage(ir, x, y, width=dw, height=dh, mask="auto")
+        except Exception:
+            pass
 
-    # --- 下段（後半列） ---
-    if len(cols_right) > 0:
-        data_right = [["項目"] + [str(c) for c in df_right.columns]]
-        for idx, row in df_right.iterrows():
-            row_vals = []
-            for v in row.values:
-                try:
-                    row_vals.append(f"{float(v):,.0f}")
-                except Exception:
-                    row_vals.append(str(v))
-            data_right.append([str(idx)] + row_vals)
+        canvas.restoreState()
 
-        tbl_right = Table(data_right, repeatRows=1)
-        style_right = TableStyle(list(common_style))
+    header_space = 26 * mm
+    avail_h = H - doc.topMargin - doc.bottomMargin - header_space
 
-        for i, label in enumerate(row_labels, start=1):
-            bg = None
-            if label in INCOME_ROWS:
-                bg = colors.HexColor("#D7EEFF")
-            elif label in EXPENSE_ROWS:
-                bg = colors.HexColor("#FFE4E1")
-            elif label in ASSET_ROWS:
-                bg = colors.HexColor("#E9FFE7")
-                if label == "総資産":
-                    bg = colors.HexColor("#DFF7DD")
-            if bg:
-                style_right.add("BACKGROUND", (0, i), (-1, i), bg)
+    # ここが「絶対1枚」の保険（収まらない時だけ最小限縮小）
+    k = KeepInFrame(avail_w, avail_h, [main_row], mode="shrink", hAlign="LEFT", vAlign="TOP")
 
-            if label in ["収入合計", "支出合計", "総資産"]:
-                style_right.add("FONTSIZE", (0, i), (-1, i), 6.5)
+    elements = [Spacer(1, header_space), k]
+    doc.build(elements, onFirstPage=draw_header)
 
-        tbl_right.setStyle(style_right)
-        elements.append(tbl_right)
-
-    doc.build(elements)
     buffer.seek(0)
     return buffer
 
-# 📄 PDFダウンロードボタン
-pdf_buffer = create_cashflow_pdf(df_t)
-st.download_button(
-    label="PDFをダウンロード",
-    data=pdf_buffer.getvalue(),
-    file_name="cashflow_a3_landscape.pdf",
-    mime="application/pdf",
-)
+# ===============================
+# PDF生成（手動トリガー）
+# ===============================
+def make_df_key(df: pd.DataFrame) -> str:
+    core = pd.util.hash_pandas_object(df, index=True).values.tobytes()
+    meta = (str(list(df.index)) + str(list(df.columns))).encode("utf-8")
+    return hashlib.sha256(meta + core).hexdigest()
+
+def _yen(v: int) -> str:
+    return f"{int(v):,}円"
+
+# PDFに載せる「条件」まとめ（右サイドバー用）
+def _yen(v: int) -> str:
+    return f"{int(v):,}円"
+
+def _pct(v: float) -> str:
+    return f"{v*100:.1f}%"
+
+# 教育費の表現（子ども1人につき1行）
+edu_lines = []
+for i, cs in enumerate(child_settings, start=1):
+    edu_lines.append(
+        f"子ども{i}：誕生年 {cs['birth_year']} / 中高 {cs['school_type']} / 進学先 {cs['uni']} / 下宿 {'あり' if cs['dorm'] else 'なし'} / 塾 {int(cs['cram_month']):,}円/月"
+    )
+
+# 特別収入・特別支出は総額のみ
+special_income_total = int(sum(special_income_by_year.values()))
+special_expense_total = int(sum(special_expense_by_year.values()))
+
+# 生活費（月額）は「初年度のベース（+10%含む）」で表示（PDFは紙面重視のため簡潔に）
+base_life_annual = get_life_cost(num_children)  # 年額（+10%含む）
+life_month_for_pdf = int(round(base_life_annual / 12))
+
+sidebar_inputs = {
+    "基本情報": [
+        f"現在の年齢：{start_age}歳",
+        f"想定終了年齢：{end_age}歳",
+        f"配偶者：{'あり' if has_spouse else 'なし'}",
+        *( [f"配偶者年齢：{spouse_age}歳"] if has_spouse and spouse_age is not None else [] ),
+        f"世帯手取り年収：{_yen(income + (spouse_income if has_spouse else 0))}",
+        f"賃金上昇率：{_pct(wage_growth)}",
+        f"インフレ率：{_pct(inflation)}",
+    ],
+    "投資・貯蓄": [
+        f"現在の貯蓄：{_yen(initial_savings)}",
+        f"投資元本：{_yen(invest_principal)}",
+        f"毎月積立：{_yen(invest_month)}/月",
+        f"想定利回り：{_pct(invest_return)}",
+    ],
+    "支出関連": [
+        f"生活費：{_yen(life_month_for_pdf)}/月",
+        f"住宅ローン：{_yen(debt_month)}/月（残 {loan_years}年）",
+        f"管理費・修繕費：{_yen(repair_month)}/月",
+    ],
+    "教育費": edu_lines if len(edu_lines) > 0 else ["子ども：なし"],
+    "特別収入・特別支出": (
+        ["なし"] if (special_income_total == 0 and special_expense_total == 0)
+        else [f"特別収入 合計：{_yen(special_income_total)}", f"特別支出 合計：{_yen(special_expense_total)}"]
+    ),
+}
+
+current_key = make_df_key(df_show)
+
+if st.session_state.get("pdf_key") != current_key:
+    st.session_state["pdf_key"] = current_key
+    st.session_state["pdf_bytes"] = None
+
+col_a, col_b, col_c = st.columns([1, 1, 2])
+with col_a:
+    if st.button("PDFを生成する", key="btn_make_pdf"):
+        with st.spinner("PDFを作成中…"):
+            st.session_state["pdf_bytes"] = create_cashflow_pdf(df_show, sidebar_inputs, logo_path).getvalue()
+with col_b:
+    if st.button("PDFをクリア", key="btn_clear_pdf"):
+        st.session_state["pdf_bytes"] = None
+with col_c:
+    if st.session_state.get("pdf_bytes"):
+        st.download_button(
+            label="PDFをダウンロード",
+            data=st.session_state["pdf_bytes"],
+            file_name="cashflow_a3_onepage.pdf",
+            mime="application/pdf",
+            key="btn_download_pdf",
+        )
+    else:
+        st.caption("※ 先に「PDFを生成する」を押してください。")
 
 # 表表示
 styler = (
@@ -572,10 +843,10 @@ st.markdown(
 
 - **生活費**  
   - 総務省「家計調査」による勤労者世帯（2人以上）の消費支出データをベースに、都市部（大阪圏）の水準を参考にしたモデルです。  
-  - 「ミニマム」：統計値のおおよそ80〜85％程度（かなり節約寄り）  
-  - 「標準」　　：統計値に近い水準（一般的な暮らしイメージ）  
-  - 「ゆとり」　：統計値の115〜120％程度（外食やレジャー多め）  
+  - 体感との差が出にくいように、**このアプリでは統計ベースに対して +10% 上乗せした金額**をプリセットの起点にしています。  
+  - 「ミニマム」：節約寄り / 「標準」：一般的 / 「ゆとり」：外食・レジャー多め  
   - 子どもの人数（0〜3人）に応じて世帯の生活費が段階的に増える前提としています。
+  - 参考: 費目別の目安内訳（割合モデル）をサイドバー内「生活費プリセットの内訳（目安）」に表示しています。
 
 - **教育費（中学校〜高校）**  
   - 文部科学省「子供の学習費調査」などを参考に、  
@@ -598,8 +869,6 @@ st.markdown(
 # ===============================
 # 右上固定ロゴ表示
 # ===============================
-logo_path = BASE_DIR / "logo_sh.png"
-
 def load_logo_base64(path: Path) -> str:
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
