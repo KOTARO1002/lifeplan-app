@@ -504,7 +504,7 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
         df_y["住宅費"] = 0
 
     # PDF表に出す列（特別収入は収入合計に含まれるので表には出さない）
-    money_cols = ["収入合計", "生活費", "住宅費", "教育費", "投資積立額", "特別支出", "年間収支", "総資産"]
+    money_cols = ["収入合計", "生活費", "住宅費", "教育費", "投資積立額", "特別支出", "年間収支", "累積貯蓄", "投資残高", "総資産"]
     cols = ["年", "本人年齢"] + ([spouse_col] if spouse_col else []) + child_cols + [c for c in money_cols if c in df_y.columns]
     out = df_y[cols].copy()
 
@@ -657,7 +657,7 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
     for c in ("生活費", "住宅費", "教育費", "投資積立額", "特別支出"):
         if c in header:
             ts.add("BACKGROUND", (col_ix(c), 1), (col_ix(c), -1), colors.HexColor("#FFEFEF"))
-    for c in ("年間収支", "総資産"):
+    for c in ("年間収支", "累積貯蓄", "投資残高", "総資産"):
         if c in header:
             ts.add("BACKGROUND", (col_ix(c), 1), (col_ix(c), -1), colors.HexColor("#E8F7E6"))
 
