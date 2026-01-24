@@ -495,6 +495,8 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
     df_y = df_y.rename(columns={"西暦": "年", "年齢": "本人年齢"})
     child_cols = [c for c in df_y.columns if c.startswith("子") and c.endswith("年齢")]
 
+    spouse_col = "配偶者年齢" if "配偶者年齢" in df_y.columns else None
+
     # 住宅費は合算して列数を圧縮（安定して1枚に収める）
     if "住宅ローン" in df_y.columns and "管理費・修繕費" in df_y.columns:
         df_y["住宅費"] = df_y["住宅ローン"] + df_y["管理費・修繕費"]
@@ -503,13 +505,13 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
 
     # PDF表に出す列（特別収入は収入合計に含まれるので表には出さない）
     money_cols = ["収入合計", "生活費", "住宅費", "教育費", "投資積立額", "特別支出", "年間収支", "総資産"]
-    cols = ["年", "本人年齢"] + child_cols + [c for c in money_cols if c in df_y.columns]
+    cols = ["年", "本人年齢"] + ([spouse_col] if spouse_col else []) + child_cols + [c for c in money_cols if c in df_y.columns]
     out = df_y[cols].copy()
 
     # 金額を万円へ
     YEN_TO_10K = 10_000
     for c in out.columns:
-        if c in ("年", "本人年齢") or c.endswith("年齢"):
+        if c in ("年", "本人年齢", "配偶者年齢") or c.endswith("年齢"):
             continue
         out[c] = (pd.to_numeric(out[c], errors="coerce") / YEN_TO_10K).round(0).fillna(0).astype(int)
 
@@ -621,6 +623,8 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
 
     # 列幅：年・年齢は固定、残りは均等
     fixed_map = {"年": 14 * mm, "本人年齢": 13 * mm}
+    if spouse_col:
+        fixed_map[spouse_col] = 13 * mm
     for cc in child_cols:
         fixed_map[cc] = 12 * mm
 
@@ -638,7 +642,7 @@ def create_cashflow_pdf(df_show: pd.DataFrame, sidebar_inputs: dict, logo_path: 
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B1220")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
-        ("ALIGN", (0, 0), (len(child_cols) + 1, -1), "CENTER"),
+        ("ALIGN", (0, 0), (1 + (1 if spouse_col else 0) + len(child_cols), -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), cell_pad),
         ("BOTTOMPADDING", (0, 0), (-1, -1), cell_pad),
@@ -752,7 +756,7 @@ sidebar_inputs = {
         f"現在の年齢：{start_age}歳",
         f"想定終了年齢：{end_age}歳",
         f"配偶者：{'あり' if has_spouse else 'なし'}",
-        *( [f"配偶者年齢：{spouse_age}歳"] if has_spouse and spouse_age is not None else [] ),
+        (f"配偶者年齢：{spouse_age}歳" if has_spouse and spouse_age is not None else "配偶者年齢：-"),
         f"世帯手取り年収：{_yen(income + (spouse_income if has_spouse else 0))}",
         f"賃金上昇率：{_pct(wage_growth)}",
         f"インフレ率：{_pct(inflation)}",
