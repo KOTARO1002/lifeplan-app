@@ -597,46 +597,6 @@ if (df["累積貯蓄"] < 0).any() or min_cumulative < 0:
         st.warning("累積貯蓄が一時的にマイナスになる可能性があります。")
 
 # ===============================
-# シナリオ管理
-# ===============================
-st.markdown("---")
-st.subheader("シナリオ管理")
-
-if "scenarios" not in st.session_state:
-    st.session_state["scenarios"] = {}
-
-sc_col1, sc_col2, sc_col3 = st.columns([2, 1, 1])
-with sc_col1:
-    scenario_name = st.text_input("シナリオ名", value="シナリオ1", label_visibility="collapsed",
-                                  placeholder="シナリオ名を入力…")
-with sc_col2:
-    if st.button("現在の設定を保存", key="btn_save_scenario"):
-        if len(st.session_state["scenarios"]) >= 4:
-            st.warning("保存できるシナリオは最大4件です。先にクリアしてください。")
-        else:
-            st.session_state["scenarios"][scenario_name] = {
-                "年齢": df["年齢"].tolist(),
-                "総資産": df["総資産"].tolist(),
-                "累積貯蓄": df["累積貯蓄"].tolist(),
-                "投資残高": df["投資残高"].tolist(),
-            }
-            st.success(f"「{scenario_name}」を保存しました。")
-with sc_col3:
-    if st.button("シナリオをクリア", key="btn_clear_scenario"):
-        st.session_state["scenarios"] = {}
-        st.success("シナリオをクリアしました。")
-
-if st.session_state["scenarios"]:
-    chips_html = " ".join(
-        f'<span style="display:inline-block;background:#E0E7FF;color:#3730A3;border-radius:999px;'
-        f'padding:2px 12px;font-size:0.8rem;font-weight:600;margin:2px;">{name}</span>'
-        for name in st.session_state["scenarios"].keys()
-    )
-    st.markdown(f"保存済み: {chips_html}", unsafe_allow_html=True)
-
-st.markdown("---")
-
-# ===============================
 # タブ構成
 # ===============================
 tab_cf, tab_graph, tab_premise = st.tabs(["キャッシュフロー表", "グラフ", "モデルの前提"])
@@ -1045,23 +1005,6 @@ with tab_graph:
             for h, v in zip(hover_base, df["総資産"] / yen_to_10k)
         ],
     ))
-
-    # 保存済みシナリオをオーバーレイ
-    SCENARIO_COLORS = ["#9333EA", "#EC4899", "#14B8A6", "#F97316"]
-    for sc_idx, (sc_name, sc_data) in enumerate(st.session_state.get("scenarios", {}).items()):
-        color = SCENARIO_COLORS[sc_idx % len(SCENARIO_COLORS)]
-        fig1.add_trace(go.Scatter(
-            x=sc_data["年齢"],
-            y=[v / yen_to_10k for v in sc_data["総資産"]],
-            mode="lines",
-            name=f"{sc_name}（総資産）",
-            line=dict(color=color, width=2, dash="dash"),
-            opacity=0.7,
-            hovertemplate=[
-                f"{sc_name}<br>年齢: {a}歳<br>総資産: {v/yen_to_10k:,.0f}万円<extra></extra>"
-                for a, v in zip(sc_data["年齢"], sc_data["総資産"])
-            ],
-        ))
 
     fig1.update_layout(
         xaxis_title="年齢",
