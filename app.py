@@ -529,12 +529,11 @@ min_cumulative_idx = df["累積貯蓄"].idxmin()
 min_cumulative_age = int(df.loc[min_cumulative_idx, "年齢"])
 min_cumulative_year = int(df.loc[min_cumulative_idx, "西暦"])
 
-# 65歳時の総資産
-age65_rows = df[df["年齢"] == 65]
-if len(age65_rows) > 0:
-    asset_at_65 = int(age65_rows["総資産"].iloc[0])
-else:
-    asset_at_65 = None
+# 65歳時の総資産・投資残高
+final_total_asset = int(df["総資産"].iloc[-1])
+final_invest_balance = int(df["投資残高"].iloc[-1])
+final_cash_savings = int(df["累積貯蓄"].iloc[-1])
+final_year = int(df["西暦"].iloc[-1])
 
 # --- Enhanced result cards ---
 col_m1, col_m2, col_m3 = st.columns(3)
@@ -543,9 +542,9 @@ with col_m1:
     st.markdown(
         f"""
         <div class="summary-card" style="background:#EFF6FF; border:2px solid #2D7FF9;">
-          <div class="card-label" style="color:#1D4ED8;">最終年の総資産</div>
+          <div class="card-label" style="color:#1D4ED8;">65歳時の総資産</div>
           <div class="card-value" style="color:#1E40AF;">{final_total_asset // 10_000:,} 万円</div>
-          <div class="card-note" style="color:#3B82F6;">{end_age}歳時点（{start_year + (end_age - start_age)}年）</div>
+          <div class="card-note" style="color:#3B82F6;">{end_age}歳時点（{final_year}年）</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -568,18 +567,13 @@ with col_m2:
     )
 
 with col_m3:
-    if asset_at_65 is not None:
-        asset_65_str = f"{asset_at_65 // 10_000:,} 万円"
-        asset_65_note = f"65歳時点（{start_year + (65 - start_age)}年）"
-    else:
-        asset_65_str = "対象外"
-        asset_65_note = "シミュレーション範囲外"
+    invest_ratio = int(final_invest_balance / max(final_total_asset, 1) * 100)
     st.markdown(
         f"""
         <div class="summary-card" style="background:#F0FDF4; border:2px solid #22C55E;">
-          <div class="card-label" style="color:#15803D;">65歳時の総資産</div>
-          <div class="card-value" style="color:#166534;">{asset_65_str}</div>
-          <div class="card-note" style="color:#16A34A;">{asset_65_note}</div>
+          <div class="card-label" style="color:#15803D;">65歳時の投資残高</div>
+          <div class="card-value" style="color:#166534;">{final_invest_balance // 10_000:,} 万円</div>
+          <div class="card-note" style="color:#16A34A;">総資産の {invest_ratio}%（現金 {final_cash_savings // 10_000:,} 万円）</div>
         </div>
         """,
         unsafe_allow_html=True,
