@@ -1,6 +1,10 @@
-streamlit
-pandas
-numpy
-matplotlib
-reportlab
-plotly
+# Streamlit Community Cloud は Python 3.12 でのデプロイを想定しています。
+# バージョンを固定しているのは、依存ライブラリ側の破壊的変更で
+# ある日突然アプリが起動しなくなるのを防ぐためです。
+# 更新するときは、ローカルで PDF 出力まで確認してから固定値を上げてください。
+streamlit==1.62.0
+pandas==3.0.5
+numpy==2.5.2
+matplotlib==3.11.1
+reportlab==5.0.1
+plotly==6.9.0
