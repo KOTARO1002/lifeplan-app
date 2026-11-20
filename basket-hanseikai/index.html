@@ -95,6 +95,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .meter{height:8px;border-radius:4px;background:var(--sunken);overflow:hidden}
 .meter i{display:block;height:100%;background:var(--ink);border-radius:4px}
 .meter-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;color:var(--ink);font-size:14px}
+#bdTool{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 62px)}
 #storBody{display:flex;flex-direction:column;gap:8px}
 .add-tile{flex:none;width:min(40vw,150px);aspect-ratio:auto;align-self:flex-start;border:1px dashed var(--line);background:transparent;border-radius:var(--r);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:13px;color:var(--ink);scroll-snap-align:start;height:calc(min(66vw,250px) * 9 / 16)}
@@ -146,7 +147,8 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .check input{width:20px;height:20px;accent-color:var(--q)}
 
 .court-wrap{border-radius:var(--r);overflow:hidden;background:var(--court);max-width:520px;width:100%;margin:0 auto}
-.court-wrap svg{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.court-wrap svg.draw{touch-action:none}
+.court-wrap svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .boards{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .boards .btn{flex:none;max-width:60vw}
 .boards .btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -558,9 +560,9 @@ function viewBoard(){
   app.innerHTML=`<div class="boards" id="bdList"></div>
    <div class="seg full" id="bdCourt"><button data-k="half" aria-pressed="${B.court==='half'}">ハーフコート板</button><button data-k="full" aria-pressed="${B.court==='full'}">オールコート板</button></div>
    <p class="meta">数字＝オフェンス　✕＝ディフェンス　指で動かせます</p>
+   <div class="seg full" id="bdTool"><button data-t="move" aria-pressed="true">動かす</button><button data-t="arrow" aria-pressed="false">走る</button><button data-t="pass" aria-pressed="false">パス</button><button data-t="pen" aria-pressed="false">ペン</button></div>
    <div class="court-wrap" id="bdWrap"></div>
-   <div class="panel"><div class="seg full" id="bdTool"><button data-t="move" aria-pressed="true">動かす</button><button data-t="arrow" aria-pressed="false">走る</button><button data-t="pass" aria-pressed="false">パス</button><button data-t="pen" aria-pressed="false">ペン</button></div>
-     <div class="row split"><div class="swatches" id="bdCol">${BINK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="線の色${i+1}"></button>`).join('')}</div>
+   <div class="panel"><div class="row split"><div class="swatches" id="bdCol">${BINK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="線の色${i+1}"></button>`).join('')}</div>
      <span class="row"><button class="btn small" id="bdUndo">1つ戻す</button><button class="btn small" id="bdClear">線を消す</button><button class="btn small" id="bdReset">並べ直す</button></span></div></div>
    <div class="panel"><div class="field"><label class="label" for="bdTitle">作戦の名前</label><input id="bdTitle" maxlength="40" placeholder="例：ゾーンの崩し方" value="${esc(B.title)}"></div>
      <div class="field"><label class="label" for="bdMemo">メモ</label><textarea id="bdMemo" maxlength="600" placeholder="ポイントや合図を書いておこう">${esc(B.memo)}</textarea></div>
@@ -568,21 +570,24 @@ function viewBoard(){
   let paint=()=>{};
   const court=()=>{const full=B.court==='full',W=1500,H=full?2800:1400;
     $('#bdWrap').innerHTML=`<svg id="bdSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="作戦板"><g>${HALF}</g>${full?`<g transform="translate(0,2800) scale(1,-1)">${HALF}</g>`:''}<g id="bdInk"></g><g id="bdPcs"></g></svg>`;
-    const svg=$('#bdSvg'),pcs=$('#bdPcs');
+    const svg=$('#bdSvg'),pcs=$('#bdPcs');svg.classList.toggle('draw',tool!=='move');
+    $('#bdWrap').style.maxWidth=full?'min(520px, calc((100svh - 200px) * 15 / 28))':'';
+    svg.addEventListener('touchstart',e=>{if(tool!=='move'||e.target.closest('[data-p]'))e.preventDefault()},{passive:false});
     const drawP=()=>{pcs.innerHTML=B.pieces.map(p=>{const x=p.x*W,y=p.y*H,k=p.id[0];
-      return `<g data-p="${p.id}" transform="translate(${r3(x)},${r3(y)})" style="cursor:grab">`+(k==='b'?`<circle r="30" fill="var(--accent)" stroke="#3a1a05" stroke-width="5"/><path d="M-30,0H30M0,-30V30" stroke="#3a1a05" stroke-width="4"/>`:
-        `<circle r="${full?56:48}" fill="${k==='o'?'#14213d':'#ffffff'}" stroke="${k==='o'?'#ffffff':'#c92a2a'}" stroke-width="7"/><text y="17" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="50" fill="${k==='o'?'#ffffff':'#c92a2a'}">${k==='o'?p.id[1]:'✕'+p.id[1]}</text>`)+`</g>`}).join('')};
+      return `<g data-p="${p.id}" transform="translate(${r3(x)},${r3(y)})" style="cursor:grab;touch-action:none"><circle r="${full?125:85}" fill="transparent"/>`+(k==='b'?`<circle r="${full?42:30}" fill="var(--accent)" stroke="#3a1a05" stroke-width="5"/><path d="M-30,0H30M0,-30V30" stroke="#3a1a05" stroke-width="4"/>`:
+        `<circle r="${full?68:48}" fill="${k==='o'?'#14213d':'#ffffff'}" stroke="${k==='o'?'#ffffff':'#c92a2a'}" stroke-width="7"/><text y="${full?24:17}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${full?70:50}" fill="${k==='o'?'#ffffff':'#c92a2a'}">${k==='o'?p.id[1]:'✕'+p.id[1]}</text>`)+`</g>`}).join('')};
     drawP();
     paint=attachDraw({svg,layer:$('#bdInk'),W,H,sw:11,tool:()=>tool,color:()=>color,strokes:()=>B.strokes});
     let drag=null;
-    svg.addEventListener('pointerdown',e=>{if(tool!=='move')return;const g=e.target.closest('[data-p]');if(!g)return;e.preventDefault();try{svg.setPointerCapture(e.pointerId)}catch(_){ }drag=B.pieces.find(p=>p.id===g.dataset.p)});
+    svg.addEventListener('pointerdown',e=>{if(tool!=='move')return;const g=e.target.closest('[data-p]');if(!g)return;e.preventDefault();try{svg.setPointerCapture(e.pointerId)}catch(_){ }const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height,dist=p=>Math.hypot((p.x-px)*W,(p.y-py)*H);
+      drag=B.pieces.slice().sort((a,b)=>dist(a)-dist(b))[0]});
     svg.addEventListener('pointermove',e=>{if(!drag)return;const r=svg.getBoundingClientRect();drag.x=r3(clamp((e.clientX-r.left)/r.width,.03,.97));drag.y=r3(clamp((e.clientY-r.top)/r.height,.02,.98));
       const g=pcs.querySelector(`[data-p="${drag.id}"]`);if(g)g.setAttribute('transform',`translate(${r3(drag.x*W)},${r3(drag.y*H)})`)});
     const up=()=>{drag=null};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up)};
   court();
   const seg=(id,attr,fn)=>$$('#'+id+' button').forEach(b=>b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
-  seg('bdTool','t',t=>{tool=t});seg('bdCol','c',c=>{color=c});
-  seg('bdCourt','k',k=>{if(k===B.court)return;B.pieces.forEach(p=>{p.y=r3(k==='full'?p.y/2:Math.min(.98,p.y*2))});B.strokes=[];B.court=k;court()});
+  seg('bdTool','t',t=>{tool=t;const v=$('#bdSvg');if(v)v.classList.toggle('draw',t!=='move')});seg('bdCol','c',c=>{color=c});
+  seg('bdCourt','k',k=>{if(k===B.court)return;B.pieces.forEach(p=>{p.y=r3(k==='full'?p.y/2:Math.min(.98,p.y*2))});B.strokes=[];B.court=k;court();if(k==='full')$('#bdTool').scrollIntoView({block:'start'})});
   $('#bdUndo').onclick=()=>{B.strokes.pop();paint()};$('#bdClear').onclick=()=>{B.strokes=[];paint()};
   $('#bdReset').onclick=()=>{B.pieces=startPieces();if(B.court==='full')B.pieces.forEach(p=>p.y=r3(p.y/2));B.strokes=[];court()};
   $('#bdSave').onclick=async()=>{B.title=$('#bdTitle').value.trim()||'作戦 '+day(Date.now());B.memo=$('#bdMemo').value.trim();if(!B.id)B.id=uid();
