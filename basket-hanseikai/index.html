@@ -201,7 +201,9 @@ const MAX_UP=20*1024*1024, MAX_CLIP=60;
 const app=$('#app');
 
 const S={local:new Set(),filter:'all',view:'home',arg:null,who:null,mode:'loading',canUpload:false,videos:[],scenes:[],boards:[],loaded:{}};
-try{S.who=localStorage.getItem('hansei.who')||null}catch(e){}
+const OLD={'パパ':'お父ちゃん','ママ':'お母ちゃん'},nm=n=>OLD[n]||n; /* names used by the first version */
+try{const w=localStorage.getItem('hansei.who')||null;S.who=nm(w);if(w&&S.who!==w)localStorage.setItem('hansei.who',S.who)}catch(e){}
+function fixNames(d){if(d.by)d.by=nm(d.by);if(d.comments){d.comments={...d.comments};for(const k in d.comments){const c=d.comments[k];if(c&&OLD[c.by])d.comments[k]={...c,by:nm(c.by)}}}return d}
 
 /* ---------- people ---------- */
 const PRESET=['カンタ','フウタ','お父ちゃん','お母ちゃん'],INITIAL={'カンタ':'カ','フウタ':'フ','お父ちゃん':'父','お母ちゃん':'母','ふたり':'2'};
@@ -230,7 +232,7 @@ const store={
       S.mode='cloud';S.canUpload=!!assets;
       const timer=setTimeout(()=>{COLS.forEach(c=>S.loaded[c]=true);onData()},10000);
       COLS.forEach(c=>db.collection(c).onSnapshot(snap=>{
-        S[c]=snap.docs.map(d=>({...d.data(),id:d.id}));S.loaded[c]=true;
+        S[c]=snap.docs.map(d=>fixNames({...d.data(),id:d.id}));S.loaded[c]=true;
         if(COLS.every(x=>S.loaded[x]))clearTimeout(timer);onData(c);
       },()=>{S.loaded[c]=true;onData(c)}));
     }else{S.mode='local';S.canUpload=true;COLS.forEach(c=>S.loaded[c]=true);onData()}
