@@ -1,139 +1,141 @@
 <meta name="claude:viewport-fit-sides" content="cover">
-<title>カンタのバスケ反省会</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<title>カンタ＆フウタ バスケ反省会</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Noto+Sans+JP:wght@400;700;900&display=swap">
 <style>
-/* Layout: phone-first single column. Sticky scoreboard-style header, fixed two-tab bar at the bottom,
-   video stage always on black, hardwood court for the tactic board. */
-:root{
-  --bg:#eef1f6; --surface:#ffffff; --sunken:#e3e8f0; --ink:#14213d; --muted:#586582; --line:#d3dae6;
-  --accent:#e8590c; --accent-ink:#ffffff; --accent-soft:#ffe8d9;
-  --q:#0b7285; --q-soft:#d9f2f6; --danger:#c92a2a;
-  --court:#dba765; --court-key:#c98d49; --court-line:#fffaf0;
-  --who1:#e8590c; --who2:#1c7ed6; --who3:#c2255c; --who4:#2b8a3e;
-  --f-display:"Dela Gothic One","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
-  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
-  --f-num:"Chakra Petch","Zen Kaku Gothic New",ui-monospace,monospace;
-  --r:14px; --tab-h:60px;
+/* Layout: sports-league-app look. Black ground, charcoal tiles, condensed italic section labels,
+   horizontal highlight rails per game, white pills for filters, red for the primary action. Single dark theme by choice. */
+:root{ color-scheme:dark;
+  --bg:#000000; --surface:#131417; --sunken:#1f2126; --ink:#ffffff; --muted:#a3a7b1; --line:#2b2e36;
+  --accent:#e4173d; --accent-ink:#ffffff; --accent-soft:#3a0c16;
+  --q:#5b96ff; --q-soft:#0f2146; --danger:#ff6474; --ok:#2fd27a;
+  --court:#c9914f; --court-key:#b0763a; --court-line:#fff6e4;
+  --who1:#e4173d; --who2:#2f6bff; --who3:#c97a00; --who4:#9b4dde;
+  --f-display:"Barlow Condensed","Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif;
+  --f-body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  --f-num:"Barlow Condensed","Noto Sans JP",ui-monospace,monospace;
+  --r:10px; --tab-h:60px;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0d1424; --surface:#172038; --sunken:#0a101d; --ink:#eef2fb; --muted:#9ba8c4; --line:#2a3657;
-  --accent:#ff7a2f; --accent-ink:#1a0d04; --accent-soft:#3b2212;
-  --q:#3bc9db; --q-soft:#0f3239; --danger:#ff6b6b;
-  --court:#b98347; --court-key:#a06f38; --court-line:#fff3dc;
-  --who1:#ff8a45; --who2:#4dabf7; --who3:#f783ac; --who4:#69db7c; color-scheme:dark } }
-:root[data-theme="dark"]{
-  --bg:#0d1424; --surface:#172038; --sunken:#0a101d; --ink:#eef2fb; --muted:#9ba8c4; --line:#2a3657;
-  --accent:#ff7a2f; --accent-ink:#1a0d04; --accent-soft:#3b2212;
-  --q:#3bc9db; --q-soft:#0f3239; --danger:#ff6b6b;
-  --court:#b98347; --court-key:#a06f38; --court-line:#fff3dc;
-  --who1:#ff8a45; --who2:#4dabf7; --who3:#f783ac; --who4:#69db7c; color-scheme:dark }
-
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:3px solid var(--q);outline-offset:2px}
 h1,h2,h3,p{margin:0}
-.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.02em;font-size:1.08em}
 
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line)}
-.top-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:54px;
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:8px;min-height:54px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.brand{font-family:var(--f-display);font-size:17px;line-height:1.2;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand b{color:var(--accent);font-weight:400}
+.brand{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1;gap:3px;border-left:5px solid var(--accent);padding-left:9px;transform:skewX(-8deg)}
+.brand i{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.03em;white-space:nowrap}
+.brand span{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.12em;white-space:nowrap}
 .back{border:0;background:var(--sunken);border-radius:999px;height:38px;padding:0 14px 0 10px;font-weight:700;display:flex;align-items:center;gap:4px}
-.who{border:1px solid var(--line);background:var(--surface);border-radius:999px;height:38px;padding:0 12px 0 6px;display:flex;align-items:center;gap:6px;font-weight:700;max-width:45%}
+.sync{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync.cloud::before{background:var(--ok)}
+.who{border:1px solid var(--line);background:var(--surface);border-radius:999px;height:38px;padding:0 12px 0 6px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;max-width:46%}
 .who span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;flex:none}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900;flex:none}
 
 main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:16px}
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-top:1px solid var(--line);
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--bg);border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom,0px);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;height:var(--tab-h)}
-.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted)}
+.tab{border:0;border-top:3px solid transparent;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted)}
 .tab svg{width:24px;height:24px}
-.tab[aria-current="page"]{color:var(--accent)}
+.tab[aria-current="page"]{color:var(--ink);border-top-color:var(--accent)}
 
-.banner{background:var(--q-soft);color:var(--ink);border-radius:var(--r);padding:10px 14px;font-size:13px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;min-height:46px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.eyebrow{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:15px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.banner{background:var(--q-soft);border-left:4px solid var(--q);border-radius:6px;padding:10px 14px;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--sunken);border-radius:8px;min-height:46px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.big{min-height:56px;font-size:16px;width:100%}
+.btn.big{min-height:54px;font-size:16px;width:100%}
 .btn.small{min-height:38px;padding:0 12px;font-size:13px}
 .btn.ghost{background:transparent}
 .btn.danger{color:var(--danger)}
-.btn.armed{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.armed{background:var(--danger);border-color:var(--danger);color:#000}
 .btn:disabled{opacity:.45;cursor:default}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row.split{justify-content:space-between}
 .grow{flex:1;min-width:0}
+.filters{display:flex;gap:8px;overflow-x:auto}
+.pill{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;min-height:38px;padding:0 18px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#000}
 
-.empty{border:2px dashed var(--line);border-radius:var(--r);padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
-.empty h2{font-family:var(--f-display);font-size:20px;font-weight:400;text-wrap:balance}
+.empty{background:var(--surface);border-radius:var(--r);padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.empty h2{font-size:20px;font-weight:900;text-wrap:balance;line-height:1.4}
 .empty p{color:var(--muted);max-width:34em}
 .steps{display:flex;flex-direction:column;gap:6px;text-align:left;font-size:14px;padding:0;margin:0;list-style:none;counter-reset:s}
 .steps li{counter-increment:s;display:flex;gap:10px;align-items:baseline}
-.steps li::before{content:counter(s);font-family:var(--f-num);font-weight:600;color:var(--accent);width:1.2em;flex:none}
+.steps li::before{content:counter(s);font-family:var(--f-display);font-style:italic;font-weight:800;font-size:20px;color:var(--accent);width:1em;flex:none}
 
-.game{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.game-head{padding:14px 14px 10px;display:flex;flex-direction:column;gap:8px}
-.game-head h2{font-size:17px;font-weight:700;overflow-wrap:anywhere}
+.game{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.game-head{display:flex;flex-direction:column;gap:4px}
+.game-head h2{font-size:19px;font-weight:900;overflow-wrap:anywhere;line-height:1.35}
 .meta{color:var(--muted);font-size:12.5px}
-.scene-list{display:flex;flex-direction:column;border-top:1px solid var(--line)}
-.scene-card{display:flex;gap:12px;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;align-items:center;width:100%}
-.scene-card:last-child{border-bottom:0}
-.thumb{width:104px;aspect-ratio:16/10;border-radius:8px;background:#000;object-fit:cover;flex:none;position:relative;overflow:hidden}
+.tag{font-size:11.5px;font-weight:900;border-radius:4px;padding:1px 8px;color:#fff}
+.rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:6px;
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));scroll-padding-inline:16px}
+.scene-card{flex:none;width:min(66vw,250px);scroll-snap-align:start;border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;gap:6px}
+.thumb{width:100%;aspect-ratio:16/9;border-radius:var(--r);background:var(--sunken);position:relative;overflow:hidden;display:block}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.thumb .badge{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.72);color:#fff;font-size:11px;border-radius:5px;padding:0 5px;line-height:1.6}
-.scene-card h3{font-size:15px;font-weight:700;overflow-wrap:anywhere;line-height:1.4}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.chip{font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 9px;background:var(--sunken);color:var(--muted)}
+.thumb::after{content:"";position:absolute;inset:50% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.thumb .badge{position:absolute;z-index:1;right:8px;bottom:6px;color:#fff;font-weight:700;font-size:15px}
+.thumb .play{position:absolute;z-index:1;left:8px;bottom:8px;width:30px;height:30px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;font-size:12px;padding-left:2px}
+.thumb .new{position:absolute;z-index:1;left:0;top:8px;background:var(--accent);color:#fff;font-family:var(--f-display);font-style:italic;font-weight:800;font-size:14px;letter-spacing:.08em;padding:0 10px 0 8px;border-radius:0 4px 4px 0}
+.scene-card h3{font-size:14.5px;font-weight:700;overflow-wrap:anywhere;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 7px;background:var(--sunken);color:var(--muted)}
 .chip.q{background:var(--q-soft);color:var(--q)}
-.none{padding:12px 14px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line)}
+.add-tile{flex:none;width:min(40vw,150px);aspect-ratio:auto;align-self:flex-start;border:1px dashed var(--line);background:transparent;border-radius:var(--r);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:13px;color:var(--ink);scroll-snap-align:start;height:calc(min(66vw,250px) * 9 / 16)}
+.add-tile b{font-size:26px;line-height:1;color:var(--accent)}
+.none{color:var(--muted);font-size:13.5px}
 
-.stage-wrap{background:#000;border-radius:var(--r);overflow:hidden;display:grid;place-items:center}
-.stage-wrap.pin{position:sticky;top:calc(env(safe-area-inset-top,0px) + 55px);z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.stage-wrap{background:#000;border-radius:var(--r);overflow:hidden;display:grid;place-items:center;border:1px solid var(--line)}
+.stage-wrap.pin{position:sticky;top:calc(env(safe-area-inset-top,0px) + 55px);z-index:5;box-shadow:0 8px 18px rgba(0,0,0,.7)}
 .stage{position:relative;width:100%;max-width:100%;background:#000;touch-action:manipulation}
 .stage video,.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .stage svg.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
 .stage svg.ov.on{pointer-events:auto;touch-action:none;cursor:crosshair}
 .stage .tap{position:absolute;inset:0;border:0;background:transparent}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
-.label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.panel{background:var(--surface);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+.label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
 .scrub{display:flex;flex-direction:column;gap:2px}
 .scrub input[type=range]{width:100%;margin:0;height:30px;accent-color:var(--accent)}
 .rangebar{height:6px;border-radius:3px;background:var(--sunken)}
 .time{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .transport{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .transport .btn{padding:0;min-height:48px;font-size:13px}
-.transport .play{background:var(--ink);color:var(--bg);border-color:var(--ink);font-size:18px}
-.seg{display:inline-flex;background:var(--sunken);border-radius:11px;padding:3px;gap:2px;max-width:100%;flex-wrap:wrap}
-.seg button{border:0;background:transparent;border-radius:9px;min-height:38px;padding:0 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.transport .play{background:var(--ink);color:#000;border-color:var(--ink);font-size:18px}
+.seg{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;gap:2px;max-width:100%;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:6px;min-height:38px;padding:0 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#000}
 .seg.full{display:flex}.seg.full button{flex:1}
 .swatches{display:flex;gap:8px}
 .sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);padding:0}
-.sw[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:2px}
+.sw[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
 .field{display:flex;flex-direction:column;gap:4px}
-.field input,.field textarea,.composer textarea{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 12px;font-size:16px}
+.field input,.field textarea,.composer textarea{width:100%;border:1px solid var(--line);background:var(--sunken);border-radius:8px;padding:10px 12px;font-size:16px}
 .field textarea,.composer textarea{resize:vertical;min-height:72px}
 .ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ab .btn{flex-direction:column;gap:0;min-height:54px;line-height:1.3}
-.ab .btn small{font-weight:500;color:var(--muted)}
+.ab .btn small{font-weight:600;color:var(--muted)}
 
-.scene-title{font-size:20px;font-weight:700;line-height:1.35;overflow-wrap:anywhere;text-wrap:balance}
+.scene-title{font-size:21px;font-weight:900;line-height:1.35;overflow-wrap:anywhere;text-wrap:balance}
 .note{white-space:pre-wrap;overflow-wrap:anywhere}
 .thread{display:flex;flex-direction:column;gap:10px}
 .msg{display:flex;gap:8px;align-items:flex-start}
-.msg .bubble{background:var(--surface);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:8px 12px;min-width:0;max-width:100%}
-.msg.q .bubble{background:var(--q-soft);border-color:var(--q)}
+.msg .bubble{background:var(--surface);border-radius:4px 12px 12px 12px;padding:8px 12px;min-width:0;max-width:100%}
+.msg.q .bubble{background:var(--q-soft);box-shadow:inset 3px 0 0 var(--q)}
 .msg .name{font-size:12px;font-weight:700}
 .msg .txt{white-space:pre-wrap;overflow-wrap:anywhere}
 .msg .del{border:0;background:none;color:var(--muted);font-size:12px;padding:0;text-decoration:underline}
-.qtag{font-size:11px;font-weight:700;color:var(--q);margin-left:6px}
+.qtag{font-size:11px;font-weight:900;color:var(--q);margin-left:6px}
 .composer{display:flex;flex-direction:column;gap:8px}
 .check{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-height:38px}
 .check input{width:20px;height:20px;accent-color:var(--q)}
@@ -143,19 +145,20 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .boards{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 .boards .btn{flex:none;max-width:60vw}
 .boards .btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.boards .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.boards .btn[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#000}
+.boards .btn em{font-style:normal;font-size:11px;font-weight:700;opacity:.65;flex:none}
 
-.sheet{position:fixed;inset:0;z-index:20;background:rgba(5,10,25,.55);display:grid;place-items:end center}
-.sheet-in{background:var(--surface);width:min(100%,520px);border-radius:20px 20px 0 0;display:flex;flex-direction:column;gap:12px;
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.7);display:grid;place-items:end center}
+.sheet-in{background:var(--surface);width:min(100%,520px);border-radius:16px 16px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;
   padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:90%;overflow:auto}
-.sheet h2{font-family:var(--f-display);font-weight:400;font-size:20px}
-.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pick .btn{flex-direction:column;min-height:84px;gap:6px}
+.sheet h2{font-weight:900;font-size:20px}
+.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pick .btn{min-height:64px;gap:10px;justify-content:flex-start}
 .pick .dot{width:36px;height:36px;font-size:15px}
-.busy{position:fixed;inset:0;z-index:30;background:rgba(5,10,25,.7);display:grid;place-items:center;color:#fff;text-align:center;padding:24px}
-.busy b{font-family:var(--f-display);font-weight:400;font-size:18px;display:block}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--bg);
-  border-radius:12px;padding:10px 16px;font-weight:700;font-size:14px;max-width:min(92vw,480px);text-align:center}
+.busy{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.8);display:grid;place-items:center;color:#fff;text-align:center;padding:24px}
+.busy b{font-weight:900;font-size:18px;display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:#000;
+  border-radius:8px;padding:10px 16px;font-weight:700;font-size:14px;max-width:min(92vw,480px);text-align:center}
 @media (prefers-reduced-motion:no-preference){ .toast{animation:pop .18s ease-out} @keyframes pop{from{opacity:0;transform:translate(-50%,8px)}} }
 </style>
 
@@ -185,13 +188,20 @@ const r3=n=>Math.round(n*1000)/1000;
 const MAX_UP=20*1024*1024, MAX_CLIP=60;
 const app=$('#app');
 
-const S={view:'home',arg:null,who:null,mode:'loading',canUpload:false,videos:[],scenes:[],boards:[],loaded:{}};
+const S={filter:'all',view:'home',arg:null,who:null,mode:'loading',canUpload:false,videos:[],scenes:[],boards:[],loaded:{}};
 try{S.who=localStorage.getItem('hansei.who')||null}catch(e){}
 
 /* ---------- people ---------- */
-const PRESET=['カンタ','パパ','ママ'];
-function whoColor(n){const i=PRESET.indexOf(n);if(i>=0)return `var(--who${i+1})`;let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return `var(--who${(h%4)+1})`}
-const dot=n=>`<span class="dot" style="background:${whoColor(n)}">${esc(String(n||'?').slice(0,1))}</span>`;
+const PRESET=['カンタ','フウタ','お父ちゃん','お母ちゃん'],INITIAL={'カンタ':'カ','フウタ':'フ','お父ちゃん':'父','お母ちゃん':'母','ふたり':'2'};
+const PLAYERS=['カンタ','フウタ','ふたり'];
+function whoColor(n){const i=PRESET.indexOf(n);if(i>=0)return `var(--who${i+1})`;if(n==='ふたり')return '#555b66';let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return `var(--who${(h%4)+1})`}
+const dot=n=>`<span class="dot" style="background:${whoColor(n)}">${esc(INITIAL[n]||String(n||'?').slice(0,1))}</span>`;
+try{const f=localStorage.getItem('hansei.filter');if(f)S.filter=f}catch(e){}
+/* what this phone has already looked at, so things the others added show as NEW */
+let SEEN={};try{SEEN=JSON.parse(localStorage.getItem('hansei.seen')||'{}')||{}}catch(e){}
+const latest=sc=>Math.max(sc.by!==S.who?(sc.at||0):0,...Object.values(sc.comments||{}).filter(c=>c&&!c.x&&c.by!==S.who).map(c=>c.at||0));
+const isNew=sc=>latest(sc)>(SEEN[sc.id]||0);
+function markSeen(sc){const l=latest(sc);if(l>(SEEN[sc.id]||0)){SEEN[sc.id]=l;try{localStorage.setItem('hansei.seen',JSON.stringify(SEEN))}catch(e){}}}
 
 /* ---------- toast / busy ---------- */
 let toastT;function toast(m,ms=3200){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms)}
@@ -292,13 +302,14 @@ async function recordClip(v,a,b,onP){
 /* ---------- chrome ---------- */
 function top(){
   const sub=S.view!=='home'&&S.view!=='board';
-  $('#top').innerHTML=(sub?`<button class="back" data-act="back" aria-label="もどる">‹ もどる</button><span class="grow"></span>`:`<h1 class="brand">カンタの<b>バスケ</b>反省会</h1>`)+
+  const sync=S.mode==='cloud'?'<span class="sync cloud">共有中</span>':S.mode==='local'?'<span class="sync">おためし</span>':'<span class="sync">接続中</span>';
+  $('#top').innerHTML=(sub?`<button class="back" data-act="back" aria-label="もどる">‹ もどる</button><span class="grow"></span>`:`<h1 class="brand"><i>FILM ROOM</i><span>バスケ反省会</span></h1>`)+sync+
     `<button class="who" data-act="who" aria-label="使う人をえらぶ">${S.who?dot(S.who)+`<span>${esc(S.who)}</span>`:'<span style="padding-left:6px">だれ？</span>'}</button>`;
   $('#tabHome').setAttribute('aria-current',S.view==='board'?'false':'page');$('#tabBoard').setAttribute('aria-current',S.view==='board'?'page':'false')}
 let cleanup=null;
 function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);
   ({home:viewHome,edit:viewEdit,scene:viewScene,board:viewBoard})[view](arg)}
-function onData(col){
+let lastMode='';function onData(col){if(lastMode!==S.mode){lastMode=S.mode;top()}
   if(S.view==='home')viewHome();
   else if(S.view==='scene'&&(!col||col==='scenes'))sceneRefresh&&sceneRefresh();
   else if(S.view==='board'&&(!col||col==='boards'))boardList&&boardList()}
@@ -320,24 +331,26 @@ function openQ(sc){const cs=Object.values(sc.comments||{}).filter(c=>c&&!c.x).so
 const nCom=sc=>Object.values(sc.comments||{}).filter(c=>c&&!c.x).length;
 function sceneCard(sc){const t=sc.poster||(sc.kind==='photo'?sc.asset:'');
   return `<button class="scene-card" data-act="scene" data-id="${esc(sc.id)}"><span class="thumb">${t?`<img src="${esc(store.url(t))}" alt="" loading="lazy">`:''}
-   <span class="badge num">${sc.kind==='photo'?'画像':fmt((sc.end||0)-(sc.start||0))+(sc.speed&&sc.speed<1?' スロー':'')}</span></span>
-   <span class="grow"><h3>${esc(sc.title)}</h3><span class="chips">${openQ(sc)?'<span class="chip q">質問あり</span>':''}<span class="chip">コメント ${nCom(sc)}</span><span class="chip">${esc(sc.by||'')}</span></span></span></button>`}
+   ${isNew(sc)?'<span class="new">NEW</span>':''}${sc.kind==='photo'?'':'<span class="play">▶</span>'}
+   <span class="badge num">${sc.kind==='photo'?'PHOTO':fmt((sc.end||0)-(sc.start||0))+(sc.speed&&sc.speed<1?' SLOW':'')}</span></span>
+   <h3>${esc(sc.title)}</h3><span class="chips">${openQ(sc)?'<span class="chip q">質問あり</span>':''}<span class="chip">コメント ${nCom(sc)}</span><span class="chip">${esc(sc.by||'')}</span></span></button>`}
 function viewHome(){
-  const vids=S.videos.slice().sort((a,b)=>b.at-a.at);
+  const f=S.filter,all=S.videos.slice().sort((a,b)=>b.at-a.at),vids=all.filter(v=>f==='all'||!v.player||v.player===f||v.player==='ふたり');
   const add=S.canUpload?`<button class="btn primary big" data-act="addvideo">＋ 試合・練習の動画を追加</button>`:'';
   if(!S.loaded.videos){app.innerHTML=`<div class="empty"><p>読み込み中…</p></div>`;return}
-  if(!vids.length){app.innerHTML=banner()+`<div class="empty"><h2>最初の動画を入れて、反省会をはじめよう</h2>
+  if(!all.length){app.innerHTML=banner()+`<div class="empty"><span class="eyebrow">Tip-off</span><h2>最初の動画を入れて、反省会をはじめよう</h2>
     <ol class="steps"><li>スマホの動画をえらぶ</li><li>反省したい場面を切り取る（スローや画像でもOK）</li><li>矢印とコメントを書いて、家族で話す</li></ol>${add}</div>`;return}
-  app.innerHTML=banner()+add+vids.map(v=>{const sc=S.scenes.filter(s=>s.videoId===v.id).sort((a,b)=>a.at-b.at);
-    return `<section class="game"><div class="game-head"><h2>${esc(v.title)}</h2>
-      <div class="row split"><span class="meta num">${day(v.at)}・${esc(v.by||'')}・シーン ${sc.length}</span>
-      <span class="row">${S.canUpload?`<button class="btn small primary" data-act="edit" data-id="${esc(v.id)}">＋ シーンを切り出す</button>`:''}
-      <button class="btn small ghost" data-act="videomenu" data-id="${esc(v.id)}" aria-label="この動画のメニュー">･･･</button></span></div></div>
-      ${sc.length?`<div class="scene-list">${sc.map(sceneCard).join('')}</div>`:`<p class="none">まだシーンがありません。「シーンを切り出す」から反省したい場面を選ぼう。</p>`}</section>`}).join('')}
+  const pills=`<div class="filters" role="group" aria-label="選手でしぼる">${[['all','すべて'],['カンタ','カンタ'],['フウタ','フウタ']].map(([k,l])=>`<button class="pill" data-act="filter" data-f="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}</div>`;
+  app.innerHTML=banner()+pills+add+(vids.length?'':`<p class="none">${esc(f)}の動画はまだありません。</p>`)+vids.map(v=>{const sc=S.scenes.filter(s=>s.videoId===v.id).sort((a,b)=>a.at-b.at);
+    return `<section class="game"><div class="game-head"><span class="eyebrow num">${day(v.at)}　Scenes ${sc.length}</span>
+      <div class="row split" style="flex-wrap:nowrap;align-items:flex-start"><h2 class="grow">${esc(v.title)}</h2><button class="btn small ghost" data-act="videomenu" data-id="${esc(v.id)}" aria-label="この動画のメニュー">･･･</button></div>
+      <div class="row">${v.player?`<span class="tag" style="background:${whoColor(v.player)}">${esc(v.player)}</span>`:''}<span class="meta">記録：${esc(v.by||'')}</span></div></div>
+      <div class="rail">${sc.map(sceneCard).join('')}${S.canUpload?`<button class="add-tile" data-act="edit" data-id="${esc(v.id)}"><b>＋</b>シーンを切り出す</button>`:(sc.length?'':'<p class="none">まだシーンがありません。</p>')}</div></section>`}).join('')}
 function videoMenu(id){const v=S.videos.find(x=>x.id===id);if(!v)return;const sh=$('#sheet');sh.hidden=false;
-  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="動画のメニュー"><h2>動画の名前</h2>
-   <div class="field"><input id="vTitle" value="${esc(v.title)}" maxlength="60" aria-label="動画の名前"></div>
-   <button class="btn primary" data-act="renamevideo" data-id="${esc(id)}">名前を保存</button>
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="動画のメニュー"><h2>動画の設定</h2>
+   <div class="field"><label class="label" for="vTitle">動画の名前</label><input id="vTitle" value="${esc(v.title)}" maxlength="60"></div>
+   <div class="field"><span class="label">だれの動画？</span><div class="seg full" id="vPlayer">${PLAYERS.map(n=>`<button data-act="pickplayer" data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
+   <button class="btn primary" data-act="renamevideo" data-id="${esc(id)}">保存</button>
    <button class="btn danger" data-act="delvideo" data-id="${esc(id)}">この動画とシーンをぜんぶ削除</button>
    <button class="btn ghost" data-act="closesheet">とじる</button></div>`}
 async function delVideo(id){const v=S.videos.find(x=>x.id===id);$('#sheet').hidden=true;busy(true,'削除中…');
@@ -351,7 +364,7 @@ $('#filePick').addEventListener('change',async e=>{const file=e.target.files[0];
   if(pickFor){await files.put(pickFor,file);go('edit',pickFor);return}
   const id=uid(),d=new Date();await files.put(id,file);
   const title=(d.getMonth()+1)+'月'+d.getDate()+'日の動画';
-  try{await store.set('videos',id,{title,at:Date.now(),by:S.who||'',size:file.size,asset:null})}catch(err){toast('動画を登録できませんでした');return}
+  try{await store.set('videos',id,{title,at:Date.now(),by:S.who||'',size:file.size,asset:null,player:PLAYERS.includes(S.who)?S.who:(S.filter!=='all'?S.filter:'カンタ')})}catch(err){toast('動画を登録できませんでした');return}
   go('edit',id);
   if(S.mode==='cloud'&&file.size<=MAX_UP&&/^video\/(mp4|webm)$/.test(file.type)){ // small files are shared whole, so every phone can cut scenes from them
     store.upload(file,file.type).then(a=>store.update('videos',id,{asset:a})).catch(()=>{})}
@@ -393,6 +406,7 @@ async function viewEdit(vid){
   <div class="panel">
     <div class="field"><label class="label" for="edTitle">タイトル</label><input id="edTitle" maxlength="60" placeholder="例：2Q 速攻でパスが遅れた"></div>
     <div class="field"><label class="label" for="edNote">コメント</label><textarea id="edNote" maxlength="1000" placeholder="何が起きた？次はどうする？"></textarea></div>
+    <div class="row split"><span class="label">だれの動画？</span><div class="seg" id="edWho">${PLAYERS.map(n=>`<button data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
     <button class="btn primary big" id="edSave">このシーンを保存</button>
   </div>`;
   const V=$('#edV'),ov=$('#edOv'),seekEl=$('#edSeek');V.src=src;V.playbackRate=E.speed;
@@ -420,6 +434,7 @@ async function viewEdit(vid){
   seg('edKind','k',k=>{E.kind=k;$('#edClip').hidden=k!=='clip';$('#edPhoto').hidden=k!=='photo';if(k==='photo')V.pause();ui()});
   seg('edTool','t',t=>{E.tool=t;ov.classList.toggle('on',t!=='none');if(t!=='none')V.pause()});
   seg('edCol','c',c=>{E.color=c});
+  seg('edWho','n',n=>{store.update('videos',vid,{player:n}).catch(()=>toast('保存できませんでした'))});
   $('#edA').onclick=()=>{E.a=V.currentTime;if(E.b<=E.a+.2)E.b=Math.min(E.dur,E.a+5);ui()};
   $('#edB').onclick=()=>{E.b=V.currentTime;if(E.a>=E.b-.2)E.a=Math.max(0,E.b-5);ui()};
   $('#edRange').onclick=async()=>{V.pause();await seek(V,E.a);E.range=true;V.play().catch(()=>{})};
@@ -481,7 +496,7 @@ function viewScene(id){
     $$('#scSpeed button').forEach(x=>x.onclick=()=>{$$('#scSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp});
     cleanup=()=>{V.pause();V.removeAttribute('src');V.load()}}
   const ln=$('#scLines');if(ln)ln.onchange=()=>{$('#scOv').style.visibility=ln.checked?'visible':'hidden'};
-  sceneRefresh=()=>{const cur=S.scenes.find(x=>x.id===id);if(!cur){go('home');return}
+  sceneRefresh=()=>{const cur=S.scenes.find(x=>x.id===id);if(!cur){go('home');return}markSeen(cur);
     const cs=Object.entries(cur.comments||{}).filter(([,c])=>c&&!c.x).sort((a,b)=>a[1].at-b[1].at);
     $('#scThread').innerHTML=cs.length?cs.map(([cid,c])=>`<div class="msg${c.q?' q':''}">${dot(c.by)}<div class="bubble"><span class="name">${esc(c.by)}</span>${c.q?'<span class="qtag">質問</span>':''}
       <span class="meta num"> ${day(c.at)}</span><div class="txt">${esc(c.text)}</div>${c.by===S.who?`<button class="del" data-act="delcomment" data-id="${esc(id)}" data-c="${esc(cid)}">消す</button>`:''}</div></div>`).join('')
@@ -513,8 +528,8 @@ let B=null,boardList=null;
 function viewBoard(){
   if(!B)B=newBoard();let tool='move',color=BINK[0];
   app.innerHTML=`<div class="boards" id="bdList"></div>
-   <div class="row split"><div class="seg" id="bdCourt"><button data-k="half" aria-pressed="${B.court==='half'}">ハーフ</button><button data-k="full" aria-pressed="${B.court==='full'}">オール</button></div>
-     <span class="meta">○オフェンス　✕ディフェンス</span></div>
+   <div class="seg full" id="bdCourt"><button data-k="half" aria-pressed="${B.court==='half'}">ハーフコート板</button><button data-k="full" aria-pressed="${B.court==='full'}">オールコート板</button></div>
+   <p class="meta">数字＝オフェンス　✕＝ディフェンス　指で動かせます</p>
    <div class="court-wrap" id="bdWrap"></div>
    <div class="panel"><div class="seg full" id="bdTool"><button data-t="move" aria-pressed="true">動かす</button><button data-t="arrow" aria-pressed="false">走る</button><button data-t="pass" aria-pressed="false">パス</button><button data-t="pen" aria-pressed="false">ペン</button></div>
      <div class="row split"><div class="swatches" id="bdCol">${BINK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="線の色${i+1}"></button>`).join('')}</div>
@@ -528,7 +543,7 @@ function viewBoard(){
     const svg=$('#bdSvg'),pcs=$('#bdPcs');
     const drawP=()=>{pcs.innerHTML=B.pieces.map(p=>{const x=p.x*W,y=p.y*H,k=p.id[0];
       return `<g data-p="${p.id}" transform="translate(${r3(x)},${r3(y)})" style="cursor:grab">`+(k==='b'?`<circle r="30" fill="var(--accent)" stroke="#3a1a05" stroke-width="5"/><path d="M-30,0H30M0,-30V30" stroke="#3a1a05" stroke-width="4"/>`:
-        `<circle r="48" fill="${k==='o'?'#14213d':'#ffffff'}" stroke="${k==='o'?'#ffffff':'#c92a2a'}" stroke-width="7"/><text y="17" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="600" font-size="50" fill="${k==='o'?'#ffffff':'#c92a2a'}">${k==='o'?p.id[1]:'✕'+p.id[1]}</text>`)+`</g>`}).join('')};
+        `<circle r="${full?56:48}" fill="${k==='o'?'#14213d':'#ffffff'}" stroke="${k==='o'?'#ffffff':'#c92a2a'}" stroke-width="7"/><text y="17" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="50" fill="${k==='o'?'#ffffff':'#c92a2a'}">${k==='o'?p.id[1]:'✕'+p.id[1]}</text>`)+`</g>`}).join('')};
     drawP();
     paint=attachDraw({svg,layer:$('#bdInk'),W,H,sw:11,tool:()=>tool,color:()=>color,strokes:()=>B.strokes});
     let drag=null;
@@ -548,7 +563,7 @@ function viewBoard(){
   let armed=false;$('#bdDel').onclick=async()=>{const d=$('#bdDel');if(!armed){armed=true;d.classList.add('armed');d.textContent='もう一度押すと削除';setTimeout(()=>{armed=false;d.classList.remove('armed');d.textContent='削除'},3000);return}
     try{await store.del('boards',B.id);B=null;toast('削除しました');viewBoard()}catch(e){toast('削除できませんでした')}};
   boardList=()=>{const el=$('#bdList');if(!el)return;const bs=S.boards.slice().sort((a,b)=>b.at-a.at);
-    el.innerHTML=`<button class="btn small" data-act="newboard">＋ 新しい作戦板</button>`+bs.map(b=>`<button class="btn small" data-act="openboard" data-id="${esc(b.id)}" aria-pressed="${B&&B.id===b.id}"><span>${esc(b.title)}</span></button>`).join('')};
+    el.innerHTML=`<button class="btn small" data-act="newboard">＋ 新しい作戦板</button>`+bs.map(b=>`<button class="btn small" data-act="openboard" data-id="${esc(b.id)}" aria-pressed="${B&&B.id===b.id}"><span>${esc(b.title)}</span><em>${b.court==='full'?'オール':'ハーフ'}</em></button>`).join('')};
   boardList();
 }
 
@@ -560,7 +575,9 @@ const ACT={
   setwho:d=>setWho(d.n),'setwho-other':()=>setWho($('#whoOther').value),
   addvideo:()=>pickVideo(null),reattach:d=>pickVideo(d.id),edit:d=>go('edit',d.id),scene:d=>go('scene',d.id),
   videomenu:d=>videoMenu(d.id),
-  renamevideo:async d=>{const t=$('#vTitle').value.trim();if(!t)return;try{await store.update('videos',d.id,{title:t});$('#sheet').hidden=true;if(S.view==='home')viewHome()}catch(e){toast('保存できませんでした')}},
+  filter:d=>{S.filter=d.f;try{localStorage.setItem('hansei.filter',d.f)}catch(e){}viewHome()},
+  pickplayer:(d,b)=>{$$('#vPlayer button').forEach(x=>x.setAttribute('aria-pressed',x===b))},
+  renamevideo:async d=>{const t=$('#vTitle').value.trim();if(!t)return;try{const pl=$('#vPlayer [aria-pressed="true"]');await store.update('videos',d.id,{title:t,...(pl?{player:pl.dataset.n}:{})});$('#sheet').hidden=true;if(S.view==='home')viewHome()}catch(e){toast('保存できませんでした')}},
   delvideo:(d,b)=>{if(twoTap(b,'もう一度押すと削除（元にもどせません）'))delVideo(d.id)},
   editscene:d=>editSceneSheet(d.id),
   savescene:async d=>{const t=$('#esTitle').value.trim();if(!t)return;try{await store.update('scenes',d.id,{title:t,note:$('#esNote').value.trim()});$('#sheet').hidden=true;go('scene',d.id)}catch(e){toast('保存できませんでした')}},
