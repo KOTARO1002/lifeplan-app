@@ -444,7 +444,7 @@ $('#filePick').addEventListener('change',async e=>{const list=[...e.target.files
 const INK=['#ffd43b','#ff4d4d','#ffffff','#4dabf7'];
 async function viewEdit(vid){
   const v=S.videos.find(x=>x.id===vid);if(!v){go('home');return}
-  const E={kind:'clip',a:0,b:0,speed:.5,tool:'none',color:INK[0],strokes:[],dur:0,range:false};
+  const E={kind:'clip',a:0,b:0,speed:1,tool:'none',color:INK[0],strokes:[],dur:0,range:false};
   const file=await files.get(vid);let src=file?URL.createObjectURL(file):(v.asset?store.url(v.asset):'');
   if(S.view!=='edit'||S.arg!==vid){if(file)URL.revokeObjectURL(src);return}
   if(!src){app.innerHTML=`<div class="empty"><h2>この動画はまだアップロードが終わっていません</h2><p>「${esc(v.title)}」は、追加したスマホでアップロードが終わると、ここから切り出せるようになります。途中で止まった場合は、動画をえらび直してください。</p>
@@ -457,7 +457,6 @@ async function viewEdit(vid){
     <div class="scrub"><input type="range" id="edSeek" min="0" max="1" step="0.01" value="0" aria-label="再生位置"><div class="rangebar" id="edBar"></div>
       <div class="time num"><span id="edNow">0:00.0</span><span id="edDur">0:00.0</span></div></div>
     <button class="btn play big" id="edPlay" aria-label="再生">▶</button>
-    <div class="row split"><span class="label">スピード</span><div class="seg" id="edSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===E.speed}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>
   </div>
   <div class="panel">
     <span class="label">切り取りかた</span>
@@ -469,7 +468,7 @@ async function viewEdit(vid){
   <div class="panel">
     <div class="field"><label class="label" for="edTitle">タイトル</label><input id="edTitle" maxlength="60" placeholder="例：2Q 速攻でパスが遅れた"></div>
     <div class="field"><label class="label" for="edNote">コメント</label><textarea id="edNote" maxlength="1000" placeholder="何が起きた？次はどうする？"></textarea></div>
-    <p class="meta">矢印や線は、保存したあとのシーン画面で書けます。</p>
+    <p class="meta">スローや矢印・線は、保存したあとのシーン画面でできます。</p>
     <div class="row split"><span class="label">だれの動画？</span><div class="seg" id="edWho">${PLAYERS.map(n=>`<button data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
     <button class="btn primary big" id="edSave">このシーンを保存</button>
   </div>`;
@@ -563,7 +562,7 @@ function viewScene(id){
     const toggle=()=>V.paused?V.play().catch(()=>{}):V.pause();$('#scPlay').onclick=toggle;$('#scTap').onclick=toggle;
     $('#scTop').onclick=()=>{V.currentTime=a;V.play().catch(()=>{})};
     $$('[data-j]',app).forEach(x=>x.onclick=()=>{V.pause();const hi=sc.whole?b:(isFinite(V.duration)?V.duration:b);V.currentTime=clamp(V.currentTime+ +x.dataset.j,a,hi)});
-    $$('#scSpeed button').forEach(x=>x.onclick=()=>{$$('#scSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp});
+    $$('#scSpeed button').forEach(x=>x.onclick=()=>{$$('#scSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp;store.update('scenes',id,{speed:sp}).catch(()=>{})});
     cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(memU)URL.revokeObjectURL(memU)}}
   if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
   let strokes=clone(sc.strokes||[]),drawing=false,dTool='arrow',dCol=INK[0];const ov=$('#scOv'),ln=$('#scLines');
