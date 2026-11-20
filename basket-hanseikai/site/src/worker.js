@@ -2,6 +2,8 @@
 //   config/auth.json   family passphrase (salted hash) and the session token
 //   db/<col>.json      videos / scenes / boards, each a map of id -> document
 //   blobs/<id>         game videos, clips and still images
+import PAGE from '../public/index.html';
+
 const COLS = ['videos', 'scenes', 'boards'];
 const MAX_BYTES = 10 * 1024 * 1024 * 1024; // R2 free allowance, shown in the storage meter
 const TYPES = /^(image\/jpeg|image\/png|video\/mp4|video\/webm|video\/quicktime)$/;
@@ -26,7 +28,10 @@ const sessionCookie = (t) => `hk=${t}; Path=/; Max-Age=31536000; HttpOnly; Secur
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/media/')) return env.ASSETS.fetch(req);
+    if (!url.pathname.startsWith('/api/') && !url.pathname.startsWith('/media/')) {
+      if (url.pathname !== '/') return new Response('Not found', { status: 404 });
+      return new Response(PAGE, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache', 'x-robots-tag': 'noindex' } });
+    }
     try {
       return await handle(req, env, url);
     } catch (e) {

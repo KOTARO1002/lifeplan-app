@@ -2,6 +2,7 @@
   "name": "basket-hanseikai",
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
-  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/media/*"] },
+  // The page is bundled into the Worker as text (no separate static-asset upload).
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
   "r2_buckets": [{ "binding": "B", "bucket_name": "basket-hanseikai" }]
 }
