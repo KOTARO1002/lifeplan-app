@@ -134,7 +134,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .time{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .transport{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .transport .btn{padding:0;min-height:48px;font-size:13px}
-.transport .play{background:var(--ink);color:#000;border-color:var(--ink);font-size:18px}
+.btn.play,.transport .play{background:var(--ink);color:#000;border-color:var(--ink);font-size:18px}
 .seg{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;gap:2px;max-width:100%;flex-wrap:wrap}
 .seg button{border:0;background:transparent;border-radius:6px;min-height:38px;padding:0 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:#000}
@@ -456,8 +456,7 @@ async function viewEdit(vid){
   <div class="panel">
     <div class="scrub"><input type="range" id="edSeek" min="0" max="1" step="0.01" value="0" aria-label="再生位置"><div class="rangebar" id="edBar"></div>
       <div class="time num"><span id="edNow">0:00.0</span><span id="edDur">0:00.0</span></div></div>
-    <div class="transport"><button class="btn" data-j="-1">−1秒</button><button class="btn" data-j="-0.1">◀ コマ</button>
-      <button class="btn play" id="edPlay" aria-label="再生">▶</button><button class="btn" data-j="0.1">コマ ▶</button><button class="btn" data-j="1">＋1秒</button></div>
+    <button class="btn play big" id="edPlay" aria-label="再生">▶</button>
     <div class="row split"><span class="label">スピード</span><div class="seg" id="edSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===E.speed}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>
   </div>
   <div class="panel">
@@ -465,17 +464,12 @@ async function viewEdit(vid){
     <div class="seg full" id="edKind"><button data-k="clip" aria-pressed="true">動画で切り取る</button><button data-k="photo" aria-pressed="false">画像で切り取る</button></div>
     <div id="edClip"><div class="ab"><button class="btn" id="edA">ここから<small class="num" id="edAT">0:00.0</small></button><button class="btn" id="edB">ここまで<small class="num" id="edBT">0:00.0</small></button></div>
       <div class="row split" style="margin-top:8px"><span class="meta num" id="edLen"></span><button class="btn small" id="edRange">この範囲を再生</button></div></div>
-    <p class="meta" id="edPhoto" hidden>いま止まっている画面をそのまま画像にします。コマ送りでいちばん見たい瞬間に合わせよう。</p>
-  </div>
-  <div class="panel">
-    <span class="label">矢印・線を書く</span>
-    <div class="seg full" id="edTool"><button data-t="none" aria-pressed="true">書かない</button><button data-t="arrow" aria-pressed="false">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button></div>
-    <div class="row split"><div class="swatches" id="edCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
-      <span class="row"><button class="btn small" id="edUndo">1つ戻す</button><button class="btn small" id="edClear">全部消す</button></span></div>
+    <p class="meta" id="edPhoto" hidden>いま止まっている画面をそのまま画像にします。上のバーを動かして、いちばん見たい瞬間に合わせよう。</p>
   </div>
   <div class="panel">
     <div class="field"><label class="label" for="edTitle">タイトル</label><input id="edTitle" maxlength="60" placeholder="例：2Q 速攻でパスが遅れた"></div>
     <div class="field"><label class="label" for="edNote">コメント</label><textarea id="edNote" maxlength="1000" placeholder="何が起きた？次はどうする？"></textarea></div>
+    <p class="meta">矢印や線は、保存したあとのシーン画面で書けます。</p>
     <div class="row split"><span class="label">だれの動画？</span><div class="seg" id="edWho">${PLAYERS.map(n=>`<button data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
     <button class="btn primary big" id="edSave">このシーンを保存</button>
   </div>`;
@@ -502,13 +496,10 @@ async function viewEdit(vid){
   const seg=(id,attr,fn)=>$$('#'+id+' button').forEach(b=>b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
   seg('edSpeed','s',s=>{E.speed=+s;V.playbackRate=E.speed});
   seg('edKind','k',k=>{E.kind=k;$('#edClip').hidden=k!=='clip';$('#edPhoto').hidden=k!=='photo';if(k==='photo')V.pause();ui()});
-  seg('edTool','t',t=>{E.tool=t;ov.classList.toggle('on',t!=='none');if(t!=='none')V.pause()});
-  seg('edCol','c',c=>{E.color=c});
   seg('edWho','n',n=>{store.update('videos',vid,{player:n}).catch(()=>toast('保存できませんでした'))});
   $('#edA').onclick=()=>{E.a=V.currentTime;if(E.b<=E.a+.2)E.b=Math.min(E.dur,E.a+5);ui()};
   $('#edB').onclick=()=>{E.b=V.currentTime;if(E.a>=E.b-.2)E.a=Math.max(0,E.b-5);ui()};
   $('#edRange').onclick=async()=>{V.pause();await seek(V,E.a);E.range=true;V.play().catch(()=>{})};
-  $('#edUndo').onclick=()=>{E.strokes.pop();paint()};$('#edClear').onclick=()=>{E.strokes.length=0;paint()};
   $('#edSave').onclick=async()=>{
     if(!V.videoWidth){toast('動画の読み込みを待ってください');return}
     let kind=E.kind;const len=E.b-E.a;
@@ -538,18 +529,24 @@ function viewScene(id){
   const sc=S.scenes.find(x=>x.id===id);if(!sc){go('home');return}
   const ar=sc.ar||16/9,H=Math.round(1000/ar),gv=S.videos.find(x=>x.id===sc.videoId),src=sc.asset||(sc.whole&&gv&&gv.asset)||'',memF=!src&&sc.whole?files.mem[sc.videoId]:null,memU=memF?URL.createObjectURL(memF):'',url=src?store.url(src):memU;let sp=sc.speed||1,lines=true;
   app.innerHTML=`
-  <div class="stage-wrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(62vh * ${ar}))">
+  <div class="stage-wrap" id="scWrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(62vh * ${ar}))">
     ${sc.kind==='photo'?`<img src="${esc(url)}" alt="${esc(sc.title)}">`:`<video id="scV" playsinline webkit-playsinline muted loop preload="auto" poster="${esc(store.url(sc.poster))}"></video><button class="tap" id="scTap" aria-label="再生・一時停止"></button>`}
-    <svg class="ov" id="scOv" viewBox="0 0 1000 ${H}" preserveAspectRatio="none">${strokesSVG(sc.strokes,1000,H,7)}</svg></div></div>
+    <svg class="ov" id="scOv" viewBox="0 0 1000 ${H}" preserveAspectRatio="none"><g></g></svg></div></div>
   <div class="panel">${sc.kind==='photo'?'':`
     <div class="transport"><button class="btn" data-j="-0.1">◀ コマ</button><button class="btn" id="scTop">最初から</button><button class="btn play" id="scPlay" aria-label="再生">▶</button><button class="btn" data-j="0.1">コマ ▶</button><span class="btn num" id="scNow" style="border:0;background:none">0:00.0</span></div>
     <div class="row split"><span class="label">スピード</span><div class="seg" id="scSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===sp}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>`}
-    ${(sc.strokes||[]).length?`<label class="check"><input type="checkbox" id="scLines" checked>矢印・線を表示する</label>`:''}
+    <div class="row split"><label class="check" id="scLinesL" ${(sc.strokes||[]).length?'':'hidden'}><input type="checkbox" id="scLines" checked>矢印・線を表示する</label><button class="btn small" id="scDraw">矢印・線を書く</button></div>
+    <div class="stack" id="scDrawBar" hidden style="gap:10px">
+      <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button></div>
+      <div class="row split"><div class="swatches" id="scCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
+        <span class="row"><button class="btn small" id="scUndo">1つ戻す</button><button class="btn small" id="scClear">全部消す</button></span></div>
+      <div class="row"><button class="btn primary grow" id="scDrawSave">書いた線を保存</button><button class="btn" id="scDrawCancel">やめる</button></div>
+    </div>
   </div>
   ${sc.kind!=='photo'&&!url?'<div class="banner">試合の動画をアップロード中です。終わるとここで再生できます。</div>':''}
   <div><h2 class="scene-title">${esc(sc.title)}</h2><p class="meta num">${esc(sc.by||'')}・${day(sc.at)}</p></div>
   ${sc.note?`<p class="note">${esc(sc.note)}</p>`:''}
-  <div class="row"><button class="btn small" data-act="editscene" data-id="${esc(id)}">タイトル・コメントを直す</button></div>
+  <div class="row"><button class="btn small" data-act="editscene" data-id="${esc(id)}">タイトル・コメントを直す</button><button class="btn small danger" data-act="delscene" data-id="${esc(id)}">このシーンを削除</button></div>
   <h3 class="label">このプレーの作戦板</h3>
   ${sc.board?`<div class="stack" id="scBoard"></div><div class="row"><button class="btn small" data-act="sboard" data-id="${esc(id)}">作戦板を直す</button></div>`:`<button class="btn" data-act="sboard" data-id="${esc(id)}">＋ このプレーの作戦板を書く（コマの動き）</button>`}
   <h3 class="label">みんなのコメント・質問</h3>
@@ -569,7 +566,17 @@ function viewScene(id){
     $$('#scSpeed button').forEach(x=>x.onclick=()=>{$$('#scSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp});
     cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(memU)URL.revokeObjectURL(memU)}}
   if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
-  const ln=$('#scLines');if(ln)ln.onchange=()=>{$('#scOv').style.visibility=ln.checked?'visible':'hidden'};
+  let strokes=clone(sc.strokes||[]),drawing=false,dTool='arrow',dCol=INK[0];const ov=$('#scOv'),ln=$('#scLines');
+  const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing?dTool:'none',color:()=>dCol,strokes:()=>strokes});
+  ln.onchange=()=>{ov.style.visibility=ln.checked?'visible':'hidden'};
+  const setDraw=on=>{drawing=on;$('#scDrawBar').hidden=!on;$('#scDraw').hidden=on;ov.classList.toggle('on',on);$('#scWrap').classList.toggle('pin',on);
+    if(on){ln.checked=true;ov.style.visibility='visible';if(V)V.pause()}$('#scLinesL').hidden=on||!strokes.length};
+  const pick=(sel,attr,fn)=>$$(sel+' button').forEach(b=>b.onclick=()=>{$$(sel+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
+  pick('#scTool','t',t=>{dTool=t});pick('#scCol','c',c=>{dCol=c});
+  $('#scDraw').onclick=()=>setDraw(true);
+  $('#scUndo').onclick=()=>{strokes.pop();paintS()};$('#scClear').onclick=()=>{strokes=[];paintS()};
+  $('#scDrawCancel').onclick=()=>{strokes=clone((S.scenes.find(x=>x.id===id)||sc).strokes||[]);paintS();setDraw(false)};
+  $('#scDrawSave').onclick=async()=>{try{await store.update('scenes',id,{strokes:clone(strokes)});toast('線を保存しました');setDraw(false)}catch(e){toast('保存できませんでした',4000)}};
   sceneRefresh=()=>{const cur=S.scenes.find(x=>x.id===id);if(!cur){go('home');return}markSeen(cur);
     const cs=Object.entries(cur.comments||{}).filter(([,c])=>c&&!c.x).sort((a,b)=>a[1].at-b[1].at);
     $('#scThread').innerHTML=cs.length?cs.map(([cid,c])=>`<div class="msg${c.q?' q':''}">${dot(c.by)}<div class="bubble"><span class="name">${esc(c.by)}</span>${c.q?'<span class="qtag">質問</span>':''}
