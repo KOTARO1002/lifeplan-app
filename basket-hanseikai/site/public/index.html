@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>カンタ＆フウタ バスケ反省会</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Noto+Sans+JP:wght@400;700;900&display=swap">
+<style>
+html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: sports-league-app look. Black ground, charcoal tiles, condensed italic section labels,
+   horizontal highlight rails per game, white pills for filters, red for the primary action. Single dark theme by choice. */
+:root{ color-scheme:dark;
+  --bg:#000000; --surface:#131417; --sunken:#1f2126; --ink:#ffffff; --muted:#a3a7b1; --line:#2b2e36;
+  --accent:#e4173d; --accent-ink:#ffffff; --accent-soft:#3a0c16;
+  --q:#5b96ff; --q-soft:#0f2146; --danger:#ff6474; --ok:#2fd27a;
+  --court:#c9914f; --court-key:#b0763a; --court-line:#fff6e4;
+  --who1:#e4173d; --who2:#2f6bff; --who3:#c97a00; --who4:#9b4dde;
+  --f-display:"Barlow Condensed","Noto Sans JP","Hiragino Kaku Gothic ProN",sans-serif;
+  --f-body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+  --f-num:"Barlow Condensed","Noto Sans JP",ui-monospace,monospace;
+  --r:10px; --tab-h:60px;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--q);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.02em;font-size:1.08em}
+
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{max-width:720px;margin:0 auto;display:flex;align-items:center;gap:8px;min-height:54px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1;gap:3px;border-left:5px solid var(--accent);padding-left:9px;transform:skewX(-8deg)}
+.brand i{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.03em;white-space:nowrap}
+.brand span{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.12em;white-space:nowrap}
+.back{border:0;background:var(--sunken);border-radius:999px;height:38px;padding:0 14px 0 10px;font-weight:700;display:flex;align-items:center;gap:4px}
+.sync{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync.cloud::before{background:var(--ok)}
+.who{border:1px solid var(--line);background:var(--surface);border-radius:999px;height:38px;padding:0 12px 0 6px;display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;max-width:46%}
+.who span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:900;flex:none}
+
+main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:16px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--bg);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;height:var(--tab-h)}
+.tab{border:0;border-top:3px solid transparent;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted)}
+.tab svg{width:24px;height:24px}
+.tab[aria-current="page"]{color:var(--ink);border-top-color:var(--accent)}
+
+.eyebrow{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:15px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.banner{background:var(--q-soft);border-left:4px solid var(--q);border-radius:6px;padding:10px 14px;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--sunken);border-radius:8px;min-height:46px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.big{min-height:54px;font-size:16px;width:100%}
+.btn.small{min-height:38px;padding:0 12px;font-size:13px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.armed{background:var(--danger);border-color:var(--danger);color:#000}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.split{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.filters{display:flex;gap:8px;overflow-x:auto}
+.pill{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;min-height:38px;padding:0 18px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#000}
+
+.empty{background:var(--surface);border-radius:var(--r);padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center}
+.empty h2{font-size:20px;font-weight:900;text-wrap:balance;line-height:1.4}
+.empty p{color:var(--muted);max-width:34em}
+.steps{display:flex;flex-direction:column;gap:6px;text-align:left;font-size:14px;padding:0;margin:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:10px;align-items:baseline}
+.steps li::before{content:counter(s);font-family:var(--f-display);font-style:italic;font-weight:800;font-size:20px;color:var(--accent);width:1em;flex:none}
+
+.game{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.game-head{display:flex;flex-direction:column;gap:4px}
+.game-head h2{font-size:19px;font-weight:900;overflow-wrap:anywhere;line-height:1.35}
+.meta{color:var(--muted);font-size:12.5px}
+.tag{font-size:11.5px;font-weight:900;border-radius:4px;padding:1px 8px;color:#fff}
+.rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:6px;
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));scroll-padding-inline:16px}
+.scene-card{flex:none;width:min(66vw,250px);scroll-snap-align:start;border:0;background:none;padding:0;text-align:left;display:flex;flex-direction:column;gap:6px}
+.thumb{width:100%;aspect-ratio:16/9;border-radius:var(--r);background:var(--sunken);position:relative;overflow:hidden;display:block}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb::after{content:"";position:absolute;inset:50% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.thumb .badge{position:absolute;z-index:1;right:8px;bottom:6px;color:#fff;font-weight:700;font-size:15px}
+.thumb .play{position:absolute;z-index:1;left:8px;bottom:8px;width:30px;height:30px;border-radius:50%;background:#fff;color:#000;display:grid;place-items:center;font-size:12px;padding-left:2px}
+.thumb .new{position:absolute;z-index:1;left:0;top:8px;background:var(--accent);color:#fff;font-family:var(--f-display);font-style:italic;font-weight:800;font-size:14px;letter-spacing:.08em;padding:0 10px 0 8px;border-radius:0 4px 4px 0}
+.scene-card h3{font-size:14.5px;font-weight:700;overflow-wrap:anywhere;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 7px;background:var(--sunken);color:var(--muted)}
+.chip.q{background:var(--q-soft);color:var(--q)}
+.chip.ok{color:var(--ok)}
+.meter{height:8px;border-radius:4px;background:var(--sunken);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ink);border-radius:4px}
+.meter-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;color:var(--ink);font-size:14px}
+.bd-tool{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 62px)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.stepbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.step{flex:none;min-width:44px;height:42px;border-radius:8px;border:1px solid var(--line);background:var(--sunken);font-family:var(--f-num);font-weight:700;font-size:18px;color:var(--muted)}
+.step[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#000}
+.step.add{padding:0 12px;background:transparent;border-style:dashed;color:var(--ink);font-family:var(--f-body);font-size:13px}
+#storBody{display:flex;flex-direction:column;gap:8px}
+.add-tile{flex:none;width:min(40vw,150px);aspect-ratio:auto;align-self:flex-start;border:1px dashed var(--line);background:transparent;border-radius:var(--r);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:700;font-size:13px;color:var(--ink);scroll-snap-align:start;height:calc(min(66vw,250px) * 9 / 16)}
+.add-tile b{font-size:26px;line-height:1;color:var(--accent)}
+.none{color:var(--muted);font-size:13.5px}
+
+.stage-wrap{background:#000;border-radius:var(--r);overflow:hidden;display:grid;place-items:center;border:1px solid var(--line)}
+.stage-wrap.pin{position:sticky;top:calc(env(safe-area-inset-top,0px) + 55px);z-index:5;box-shadow:0 8px 18px rgba(0,0,0,.7)}
+.stage{position:relative;width:100%;max-width:100%;background:#000;touch-action:manipulation}
+.stage video,.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.stage svg.ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 0 1.5px rgba(0,0,0,.9))}
+.stage svg.ov.on{pointer-events:auto;touch-action:none;cursor:crosshair}
+.stage .tap{position:absolute;inset:0;border:0;background:transparent}
+.panel{background:var(--surface);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+.label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.scrub{display:flex;flex-direction:column;gap:2px}
+.scrub input[type=range]{width:100%;margin:0;height:30px;accent-color:var(--accent)}
+.rangebar{height:6px;border-radius:3px;background:var(--sunken)}
+.time{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.transport{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.transport .btn{padding:0;min-height:48px;font-size:13px}
+.transport .play{background:var(--ink);color:#000;border-color:var(--ink);font-size:18px}
+.seg{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;gap:2px;max-width:100%;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:6px;min-height:38px;padding:0 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#000}
+.seg.full{display:flex}.seg.full button{flex:1}
+.swatches{display:flex;gap:8px}
+.sw{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);padding:0}
+.sw[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input,.field textarea,.composer textarea{width:100%;border:1px solid var(--line);background:var(--sunken);border-radius:8px;padding:10px 12px;font-size:16px}
+.field textarea,.composer textarea{resize:vertical;min-height:72px}
+.ab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ab .btn{flex-direction:column;gap:0;min-height:54px;line-height:1.3}
+.ab .btn small{font-weight:600;color:var(--muted)}
+
+.scene-title{font-size:21px;font-weight:900;line-height:1.35;overflow-wrap:anywhere;text-wrap:balance}
+.note{white-space:pre-wrap;overflow-wrap:anywhere}
+.thread{display:flex;flex-direction:column;gap:10px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg .bubble{background:var(--surface);border-radius:4px 12px 12px 12px;padding:8px 12px;min-width:0;max-width:100%}
+.msg.q .bubble{background:var(--q-soft);box-shadow:inset 3px 0 0 var(--q)}
+.msg .name{font-size:12px;font-weight:700}
+.msg .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.msg .del{border:0;background:none;color:var(--muted);font-size:12px;padding:0;text-decoration:underline}
+.qtag{font-size:11px;font-weight:900;color:var(--q);margin-left:6px}
+.composer{display:flex;flex-direction:column;gap:8px}
+.check{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;min-height:38px}
+.check input{width:20px;height:20px;accent-color:var(--q)}
+
+.court-wrap{border-radius:var(--r);overflow:hidden;background:var(--court);max-width:520px;width:100%;margin:0 auto}
+.court-wrap svg.draw{touch-action:none}
+.court-wrap svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.boards{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.boards .btn{flex:none;max-width:60vw}
+.boards .btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.boards .btn[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#000}
+.boards .btn em{font-style:normal;font-size:11px;font-weight:700;opacity:.65;flex:none}
+
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.7);display:grid;place-items:end center}
+.sheet-in{background:var(--surface);width:min(100%,520px);border-radius:16px 16px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;
+  padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:90%;overflow:auto}
+.sheet h2{font-weight:900;font-size:20px}
+.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pick .btn{min-height:64px;gap:10px;justify-content:flex-start}
+.pick .dot{width:36px;height:36px;font-size:15px}
+.busy{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.8);display:grid;place-items:center;color:#fff;text-align:center;padding:24px}
+.busy b{font-weight:900;font-size:18px;display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tab-h) + 18px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:#000;
+  border-radius:8px;padding:10px 16px;font-weight:700;font-size:14px;max-width:min(92vw,480px);text-align:center}
+@media (prefers-reduced-motion:no-preference){ .toast{animation:pop .18s ease-out} @keyframes pop{from{opacity:0;transform:translate(-50%,8px)}} }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="top-in" id="top"></div></header>
+<main id="app"></main>
+<nav class="tabs" aria-label="メニュー"><div class="tabs-in">
+  <button class="tab" id="tabHome" data-act="tab" data-v="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.2v5.6l5-2.8z" fill="currentColor"/></svg>反省シーン</button>
+  <button class="tab" id="tabBoard" data-act="tab" data-v="board">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v5a3 3 0 0 0 6 0V4M7 16l3-3M14 13l3 3M17 13l-3 3"/></svg>作戦板</button>
+</div></nav>
+<div id="sheet" class="sheet" hidden></div>
+<div id="busy" class="busy" hidden><div><b id="busyT"></b><span id="busyS"></span></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<input type="file" id="filePick" accept="video/*" multiple hidden>
+
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const fmt=t=>{t=Math.max(0,t||0);const m=Math.floor(t/60);return m+':'+(t%60).toFixed(1).padStart(4,'0')};
+const day=ms=>{const d=new Date(ms);return (d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const r3=n=>Math.round(n*1000)/1000;
+const MAX_UP=20*1024*1024, MAX_CLIP=60;
+const app=$('#app');
+
+const S={lock:false,local:new Set(),filter:'all',view:'home',arg:null,who:null,mode:'loading',canUpload:false,videos:[],scenes:[],boards:[],loaded:{}};
+const OLD={'パパ':'お父ちゃん','ママ':'お母ちゃん'},nm=n=>OLD[n]||n; /* names used by the first version */
+try{const w=localStorage.getItem('hansei.who')||null;S.who=nm(w);if(w&&S.who!==w)localStorage.setItem('hansei.who',S.who)}catch(e){}
+function fixNames(d){if(d.by)d.by=nm(d.by);if(d.comments){d.comments={...d.comments};for(const k in d.comments){const c=d.comments[k];if(c&&OLD[c.by])d.comments[k]={...c,by:nm(c.by)}}}return d}
+
+/* ---------- people ---------- */
+const PRESET=['カンタ','フウタ','お父ちゃん','お母ちゃん'],INITIAL={'カンタ':'カ','フウタ':'フ','お父ちゃん':'父','お母ちゃん':'母','ふたり':'2'};
+const PLAYERS=['カンタ','フウタ','ふたり'];
+function whoColor(n){const i=PRESET.indexOf(n);if(i>=0)return `var(--who${i+1})`;if(n==='ふたり')return '#555b66';let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return `var(--who${(h%4)+1})`}
+const dot=n=>`<span class="dot" style="background:${whoColor(n)}">${esc(INITIAL[n]||String(n||'?').slice(0,1))}</span>`;
+try{const f=localStorage.getItem('hansei.filter');if(f)S.filter=f}catch(e){}
+/* what this phone has already looked at, so things the others added show as NEW */
+let SEEN={};try{SEEN=JSON.parse(localStorage.getItem('hansei.seen')||'{}')||{}}catch(e){}
+const latest=sc=>Math.max(sc.by!==S.who?(sc.at||0):0,...Object.values(sc.comments||{}).filter(c=>c&&!c.x&&c.by!==S.who).map(c=>c.at||0));
+const isNew=sc=>latest(sc)>(SEEN[sc.id]||0);
+function markSeen(sc){const l=latest(sc);if(l>(SEEN[sc.id]||0)){SEEN[sc.id]=l;try{localStorage.setItem('hansei.seen',JSON.stringify(SEEN))}catch(e){}}}
+
+/* ---------- toast / busy ---------- */
+let toastT;function toast(m,ms=3200){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,ms)}
+function busy(on,t='',s=''){$('#busy').hidden=!on;$('#busyT').textContent=t;$('#busyS').textContent=s}
+
+/* ---------- store: this site's API (R2 behind it), or try-out mode in memory when opened as a plain file ---------- */
+const API=location.protocol.startsWith('http'),urlCache={},COLS=['videos','scenes','boards'];
+function merge(a,b){const o={...a};for(const k in b){o[k]=(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a&&typeof a[k]==='object'&&!Array.isArray(a[k]))?merge(a[k],b[k]):b[k]}return o}
+async function api(path,opt){let r;try{r=await fetch(path,{credentials:'same-origin',...(opt||{})})}catch(e){throw{code:'network'}}
+  if(r.status===401){authSheet('login');throw{code:'auth'}}
+  if(!r.ok){let j={};try{j=await r.json()}catch(e){}throw{code:j.error||'http',status:r.status}}return r.json()}
+const post=(path,body)=>api(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+const store={ver:'',pend:0,pulling:false,started:false,
+  async init(){
+    if(!API){S.mode='local';S.canUpload=true;COLS.forEach(c=>S.loaded[c]=true);onData();if(!S.who)whoSheet();return}
+    let me;try{me=await api('/api/me')}catch(e){COLS.forEach(c=>S.loaded[c]=true);onData();toast('サーバーにつながりません。電波を確認して開き直してください',6000);return}
+    if(!me.setup)return authSheet('setup');if(!me.authed)return authSheet('login');await this.start()},
+  async start(){S.mode='cloud';S.canUpload=true;await this.pull(true);if(!S.who)whoSheet();if(this.started)return;this.started=true;
+    setInterval(()=>{if(!document.hidden)this.pull()},7000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)this.pull()})},
+  async pull(first){if(this.pulling)return;this.pulling=true;
+    try{const r=await api('/api/state?v='+encodeURIComponent(this.ver));
+      if(!r.same&&this.pend===0){this.ver=r.v;COLS.forEach(c=>{S[c]=Object.entries(r[c]||{}).map(([id,d])=>fixNames({...d,id}));S.loaded[c]=true});onData()}
+    }catch(e){}finally{this.pulling=false;if(first&&!S.loaded.videos){COLS.forEach(c=>S.loaded[c]=true);onData()}}},
+  local(col,id,fn){const i=S[col].findIndex(x=>x.id===id);const next=fn(i>=0?S[col][i]:null);const arr=S[col].slice();
+    if(next==null){if(i>=0)arr.splice(i,1)}else if(i>=0)arr[i]={...next,id};else arr.push({...next,id});S[col]=arr},
+  async write(body){if(S.mode!=='cloud')return;this.pend++;try{await post('/api/doc',body)}finally{this.pend--;this.pull()}},
+  async set(col,id,data){this.local(col,id,()=>data);await this.write({col,id,op:'set',data})},
+  async update(col,id,patch){this.local(col,id,o=>o?merge(o,patch):null);await this.write({col,id,op:'update',data:patch})},
+  async del(col,id){this.local(col,id,()=>null);await this.write({col,id,op:'del'})},
+  async upload(blob,type){
+    if(S.mode==='cloud')return (await api('/api/blob?type='+encodeURIComponent(type),{method:'PUT',body:blob})).id;
+    const id='local'+uid();urlCache[id]=URL.createObjectURL(blob);return id},
+  async drop(id){try{if(id&&S.mode==='cloud')await api('/api/blob?id='+encodeURIComponent(id),{method:'DELETE'})}catch(e){}},
+  url:id=>id?(urlCache[id]||'/media/'+id):''
+};
+function upErr(e){const c=e&&e.code;
+  if(c==='too_large')return 'ファイルが大きすぎます。シーンを短くしてみてください';
+  if(c==='unsupported_type')return 'この形式のファイルは保存できませんでした';
+  if(c==='auth')return '合言葉をもう一度入れてください';
+  return '保存できませんでした。電波のいい場所でもう一度ためしてください'}
+
+/* ---------- family passphrase ---------- */
+function authSheet(kind){S.lock=true;const sh=$('#sheet');sh.hidden=false;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="合言葉"><h2>${kind==='setup'?'家族の合言葉を決めよう':'合言葉を入れてね'}</h2>
+   <p class="meta">${kind==='setup'?'この合言葉を知っている人だけが、動画やコメントを見られます。4文字以上で決めて、家族に教えてください。':'家族で決めた合言葉を入れると、このスマホで使えるようになります。'}</p>
+   <div class="field"><input id="authPass" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40" placeholder="合言葉" aria-label="合言葉"></div>
+   <button class="btn primary big" data-act="auth" data-k="${kind}">${kind==='setup'?'この合言葉ではじめる':'はじめる'}</button></div>`}
+async function doAuth(kind){const pass=$('#authPass').value.trim();if(pass.length<4){toast('合言葉は4文字以上にしてください');return}
+  try{await post(kind==='setup'?'/api/setup':'/api/login',{pass});S.lock=false;$('#sheet').hidden=true;await store.start()}
+  catch(e){if(e&&e.code==='already'){toast('合言葉はもう決まっています。入力してください');authSheet('login')}else toast(e&&e.code==='wrong'?'合言葉がちがいます':'つながりませんでした。もう一度ためしてください')}}
+
+/* ---------- game videos: kept in memory while this page is open, uploaded whole to the server ---------- */
+const files={mem:{},async put(id,file){this.mem[id]=file;return true},async get(id){return this.mem[id]||null},async del(id){delete this.mem[id]}};
+const fsize=b=>b>=1073741824?(b/1073741824).toFixed(1)+'GB':Math.max(1,Math.round((b||0)/1048576))+'MB';
+const CHUNK=32*1024*1024,wait=ms=>new Promise(r=>setTimeout(r,ms));
+S.up={}; /* video id -> 0..1 while uploading, -1 when it failed */
+function xhrPut(url,blob,onP){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('PUT',url);x.responseType='json';
+  x.upload.onprogress=e=>{if(e.lengthComputable)onP(e.loaded/e.total)};
+  x.onload=()=>x.status>=200&&x.status<300&&x.response?res(x.response):rej({code:(x.response&&x.response.error)||'http',status:x.status});
+  x.onerror=()=>rej({code:'network'});x.send(blob)})}
+function upShow(id){const el=document.querySelector(`[data-up="${id}"]`);if(el)el.textContent='アップロード中 '+Math.round((S.up[id]||0)*100)+'%'}
+let upChain=Promise.resolve(),wake=null;
+function queueUpload(id,file){if(S.mode!=='cloud')return;S.up[id]=0;upChain=upChain.then(()=>uploadVideo(id,file))}
+async function uploadVideo(id,file){
+  const type=/^video\/(mp4|webm|quicktime)$/.test(file.type)?file.type:'video/mp4',prog=p=>{S.up[id]=p;upShow(id)};
+  try{if(!wake&&navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
+  try{let asset;
+    if(file.size<=CHUNK)asset=(await xhrPut('/api/blob?type='+encodeURIComponent(type),file,prog)).id;
+    else{const mp=await api('/api/mp/create?type='+encodeURIComponent(type),{method:'POST'}),n=Math.ceil(file.size/CHUNK),parts=[];
+      for(let i=0;i<n;i++){let r;
+        for(let t=0;;t++){try{r=await xhrPut(`/api/mp/part?id=${mp.id}&uploadId=${encodeURIComponent(mp.uploadId)}&n=${i+1}`,file.slice(i*CHUNK,(i+1)*CHUNK),p=>prog((i+p)/n));break}
+          catch(e){if(t>=3)throw e;await wait(2500*(t+1))}}
+        parts.push({partNumber:r.n,etag:r.etag})}
+      await post('/api/mp/complete',{id:mp.id,uploadId:mp.uploadId,parts});asset=mp.id}
+    await store.update('videos',id,{asset});delete S.up[id];toast('動画のアップロードが終わりました');
+  }catch(e){S.up[id]=-1;toast('動画のアップロードに失敗しました。動画のメニューからやり直せます',6000)}
+  if(!Object.values(S.up).some(v=>v>=0)&&wake){try{wake.release()}catch(e){}wake=null}
+  if(S.view==='home')viewHome()}
+window.addEventListener('beforeunload',e=>{if(Object.values(S.up).some(v=>v>=0)){e.preventDefault();e.returnValue=''}});
+let useAt=0,useVal=null;
+async function fillStorage(){if(!$('#storBody'))return;let h='';
+  if(S.mode==='cloud'){if(Date.now()-useAt>30000){try{useVal=await api('/api/usage');useAt=Date.now()}catch(e){}}
+    if(useVal)h+=`<div class="meter-row"><b>保存している動画・シーン</b><span class="num">${useVal.files}件・${fsize(useVal.bytes)} / ${fsize(useVal.maxBytes)}</span></div><div class="meter"><i style="width:${clamp(useVal.bytes/useVal.maxBytes*100,1,100).toFixed(1)}%"></i></div>`;
+    h+=`<span>試合の動画もシーンもサーバーに保存され、合言葉を入れた家族のスマホから見られます。</span>`}
+  else h=`<span>おためしモードでは保存されません。</span>`;
+  const el=$('#storBody');if(el)el.innerHTML=h}
+
+/* ---------- drawing (arrows / pen / circle), coordinates stored 0..1 ---------- */
+function strokeSVG(s,W,H,sw){
+  const X=v=>r3(v*W),Y=v=>r3(v*H),c=esc(s.c||'#ffd43b');
+  if(s.t==='pen'&&s.p&&s.p.length)return `<path d="M${s.p.map(p=>X(p[0])+','+Y(p[1])).join('L')}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(s.t==='circle')return `<ellipse cx="${X((s.a[0]+s.b[0])/2)}" cy="${Y((s.a[1]+s.b[1])/2)}" rx="${Math.abs(X(s.b[0])-X(s.a[0]))/2}" ry="${Math.abs(Y(s.b[1])-Y(s.a[1]))/2}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+  if(s.t==='arrow'){const x1=X(s.a[0]),y1=Y(s.a[1]),x2=X(s.b[0]),y2=Y(s.b[1]),L=Math.hypot(x2-x1,y2-y1);if(L<sw)return '';
+    const ux=(x2-x1)/L,uy=(y2-y1)/L,hd=Math.min(sw*4.5,L*.6),bx=x2-ux*hd,by=y2-uy*hd,hw=hd*.55;
+    return `<line x1="${x1}" y1="${y1}" x2="${r3(bx)}" y2="${r3(by)}" stroke="${c}" stroke-width="${sw}" stroke-linecap="round"${s.d?` stroke-dasharray="${sw*2.4} ${sw*2.2}"`:''}/>`+
+      `<polygon points="${x2},${y2} ${r3(bx-uy*hw)},${r3(by+ux*hw)} ${r3(bx+uy*hw)},${r3(by-ux*hw)}" fill="${c}"/>`}
+  return ''}
+const strokesSVG=(list,W,H,sw)=>(list||[]).map(s=>strokeSVG(s,W,H,sw)).join('');
+/* o: {svg, layer(g element), W,H,sw, get tool(), get color(), strokes(array), changed()} */
+function attachDraw(o){
+  let cur=null;
+  const pt=e=>{const r=o.svg.getBoundingClientRect();return [r3(clamp((e.clientX-r.left)/r.width,0,1)),r3(clamp((e.clientY-r.top)/r.height,0,1))]};
+  const paint=()=>{o.layer.innerHTML=strokesSVG(o.strokes(),o.W,o.H,o.sw)+(cur?strokeSVG(cur,o.W,o.H,o.sw):'')};
+  o.svg.addEventListener('pointerdown',e=>{const t=o.tool();if(!t||t==='none'||t==='move')return;e.preventDefault();
+    try{o.svg.setPointerCapture(e.pointerId)}catch(_){ }const p=pt(e);
+    cur=t==='pen'?{t:'pen',c:o.color(),p:[p]}:t==='circle'?{t:'circle',c:o.color(),a:p,b:p}:{t:'arrow',c:o.color(),a:p,b:p,...(t==='pass'?{d:1}:{})};paint()});
+  o.svg.addEventListener('pointermove',e=>{if(!cur)return;const p=pt(e);
+    if(cur.t==='pen'){const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])>.008&&cur.p.length<400)cur.p.push(p)}else cur.b=p;paint()});
+  const end=()=>{if(!cur)return;const s=cur;cur=null;
+    const ok=s.t==='pen'?s.p.length>1:Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1])>.02;
+    if(ok){o.strokes().push(s);o.changed&&o.changed()}paint()};
+  o.svg.addEventListener('pointerup',end);o.svg.addEventListener('pointercancel',end);
+  paint();return paint}
+
+/* ---------- video helpers ---------- */
+const seek=(v,t)=>new Promise(res=>{if(Math.abs(v.currentTime-t)<.005&&v.readyState>=2)return res();
+  let done=false;const f=()=>{if(done)return;done=true;v.removeEventListener('seeked',f);res()};v.addEventListener('seeked',f);v.currentTime=t;setTimeout(f,3000)});
+function grab(v,maxW){const sc=Math.min(1,maxW/v.videoWidth),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc);c.height=Math.round(v.videoHeight*sc);
+  c.getContext('2d').drawImage(v,0,0,c.width,c.height);return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('grab')),'image/jpeg',.85))}
+async function recordClip(v,a,b,onP){
+  if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream)throw{code:'no_recorder'};
+  const mime=['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));
+  if(!mime)throw{code:'no_recorder'};
+  const sc=Math.min(1,720/Math.max(v.videoWidth,v.videoHeight)),ev=n=>Math.max(2,Math.round(n/2)*2);
+  const c=document.createElement('canvas');c.width=ev(v.videoWidth*sc);c.height=ev(v.videoHeight*sc);const ctx=c.getContext('2d');
+  await seek(v,a);ctx.drawImage(v,0,0,c.width,c.height);
+  const rec=new MediaRecorder(c.captureStream(30),{mimeType:mime,videoBitsPerSecond:1600000}),chunks=[];
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  const stopped=new Promise((res,rej)=>{rec.onstop=res;rec.onerror=()=>rej({code:'no_recorder'})});
+  const wasMuted=v.muted,wasRate=v.playbackRate;v.muted=true;v.playbackRate=1;rec.start(250);
+  try{await v.play();
+    await new Promise(res=>{const t0=performance.now();const tick=()=>{ctx.drawImage(v,0,0,c.width,c.height);onP&&onP(clamp((v.currentTime-a)/(b-a),0,1));
+      if(v.currentTime>=b||v.ended||v.paused||performance.now()-t0>(b-a+8)*1000)return res();requestAnimationFrame(tick)};requestAnimationFrame(tick)});
+  }finally{v.pause();v.muted=wasMuted;v.playbackRate=wasRate;if(rec.state!=='inactive')rec.stop()}
+  await stopped;const type=mime.split(';')[0];const blob=new Blob(chunks,{type});
+  if(!blob.size)throw{code:'no_recorder'};return {blob,type}}
+
+/* ---------- chrome ---------- */
+function top(){
+  const sub=S.view!=='home'&&S.view!=='board';
+  const sync=S.mode==='cloud'?'<span class="sync cloud">共有中</span>':S.mode==='local'?'<span class="sync">おためし</span>':'<span class="sync">接続中</span>';
+  $('#top').innerHTML=(sub?`<button class="back" data-act="back" aria-label="もどる">‹ もどる</button><span class="grow"></span>`:`<h1 class="brand"><i>FILM ROOM</i><span>バスケ反省会</span></h1>`)+sync+
+    `<button class="who" data-act="who" aria-label="使う人をえらぶ">${S.who?dot(S.who)+`<span>${esc(S.who)}</span>`:'<span style="padding-left:6px">だれ？</span>'}</button>`;
+  $('#tabHome').setAttribute('aria-current',S.view==='board'?'false':'page');$('#tabBoard').setAttribute('aria-current',S.view==='board'?'page':'false')}
+let cleanup=null;
+function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);
+  ({home:viewHome,edit:viewEdit,scene:viewScene,board:viewBoard,sboard:viewSBoard})[view](arg)}
+let lastMode='';function onData(col){if(lastMode!==S.mode){lastMode=S.mode;top()}
+  if(S.view==='home')viewHome();
+  else if(S.view==='scene'&&(!col||col==='scenes'))sceneRefresh&&sceneRefresh();
+  else if(S.view==='board'&&(!col||col==='boards'))boardList&&boardList()}
+const banner=()=>S.mode==='local'?`<div class="banner">おためしモードです。ここで作ったものは保存されません。</div>`:'';
+
+/* ---------- who sheet ---------- */
+function whoSheet(){const sh=$('#sheet');sh.hidden=false;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="使う人をえらぶ"><h2>このスマホを使うのはだれ？</h2>
+  <p class="meta">コメントに名前がつきます。あとで右上からいつでも変えられます。</p>
+  <div class="pick">${PRESET.map(n=>`<button class="btn" data-act="setwho" data-n="${esc(n)}">${dot(n)}${esc(n)}</button>`).join('')}</div>
+  <div class="row"><div class="field grow"><input id="whoOther" placeholder="ほかの名前（例：コーチ）" maxlength="12" aria-label="ほかの名前"></div><button class="btn" data-act="setwho-other">決定</button></div>
+  ${S.who?'<button class="btn ghost" data-act="closesheet">とじる</button>':''}</div>`}
+function setWho(n){n=String(n||'').trim().slice(0,12);if(!n)return;S.who=n;try{localStorage.setItem('hansei.who',n)}catch(e){}$('#sheet').hidden=true;top();if(S.view==='scene')sceneRefresh&&sceneRefresh()}
+
+/* ---------- home ---------- */
+function openQ(sc){const cs=Object.values(sc.comments||{}).filter(c=>c&&!c.x).sort((a,b)=>a.at-b.at);
+  return cs.some((c,i)=>c.q&&!cs.slice(i+1).some(d=>d.by!==c.by))}
+const nCom=sc=>Object.values(sc.comments||{}).filter(c=>c&&!c.x).length;
+function sceneCard(sc){const t=sc.poster||(sc.kind==='photo'?sc.asset:'');
+  return `<button class="scene-card" data-act="scene" data-id="${esc(sc.id)}"><span class="thumb">${t?`<img src="${esc(store.url(t))}" alt="" loading="lazy">`:''}
+   ${isNew(sc)?'<span class="new">NEW</span>':''}${sc.kind==='photo'?'':'<span class="play">▶</span>'}
+   <span class="badge num">${sc.kind==='photo'?'PHOTO':fmt((sc.end||0)-(sc.start||0))+(sc.speed&&sc.speed<1?' SLOW':'')}</span></span>
+   <h3>${esc(sc.title)}</h3><span class="chips">${openQ(sc)?'<span class="chip q">質問あり</span>':''}${sc.board?'<span class="chip">作戦板</span>':''}<span class="chip">コメント ${nCom(sc)}</span><span class="chip">${esc(sc.by||'')}</span></span></button>`}
+function viewHome(){
+  const f=S.filter,all=S.videos.slice().sort((a,b)=>b.at-a.at),vids=all.filter(v=>f==='all'||!v.player||v.player===f||v.player==='ふたり');
+  const add=S.canUpload?`<button class="btn primary big" data-act="addvideo">＋ 試合・練習の動画を追加（複数OK）</button>`:'';
+  if(!S.loaded.videos){app.innerHTML=`<div class="empty"><p>読み込み中…</p></div>`;return}
+  if(!all.length){app.innerHTML=banner()+`<div class="empty"><span class="eyebrow">Tip-off</span><h2>最初の動画を入れて、反省会をはじめよう</h2>
+    <ol class="steps"><li>スマホの動画をえらぶ</li><li>反省したい場面を切り取る（スローや画像でもOK）</li><li>矢印とコメントを書いて、家族で話す</li></ol>${add}</div>`;return}
+  const pills=`<div class="filters" role="group" aria-label="選手でしぼる">${[['all','すべて'],['カンタ','カンタ'],['フウタ','フウタ']].map(([k,l])=>`<button class="pill" data-act="filter" data-f="${k}" aria-pressed="${f===k}">${l}</button>`).join('')}</div>`;
+  app.innerHTML=banner()+pills+add+(vids.length?'':`<p class="none">${esc(f)}の動画はまだありません。</p>`)+vids.map(v=>{const sc=S.scenes.filter(s=>s.videoId===v.id).sort((a,b)=>a.at-b.at);
+    return `<section class="game"><div class="game-head"><span class="eyebrow num">${day(v.at)}　Scenes ${sc.length}</span>
+      <div class="row split" style="flex-wrap:nowrap;align-items:flex-start"><h2 class="grow">${esc(v.title)}</h2><button class="btn small ghost" data-act="videomenu" data-id="${esc(v.id)}" aria-label="この動画のメニュー">･･･</button></div>
+      <div class="row">${v.player?`<span class="tag" style="background:${whoColor(v.player)}">${esc(v.player)}</span>`:''}<span class="meta">記録：${esc(v.by||'')}</span>${v.asset?`<span class="chip ok">保存済み${v.size?' '+fsize(v.size):''}</span>`:S.up[v.id]>=0?`<span class="chip q" data-up="${esc(v.id)}">アップロード中 ${Math.round(S.up[v.id]*100)}%</span>`:S.mode==='cloud'?'<span class="chip">アップロード未完了</span>':''}</div></div>
+      <div class="rail">${sc.map(sceneCard).join('')}${S.canUpload?`<button class="add-tile" data-act="edit" data-id="${esc(v.id)}"><b>＋</b>シーンを切り出す</button>`:(sc.length?'':'<p class="none">まだシーンがありません。</p>')}</div></section>`}).join('')+`<section class="panel"><span class="eyebrow">Storage</span><div id="storBody" class="meta">確認中…</div></section>`;fillStorage()}
+function videoMenu(id){const v=S.videos.find(x=>x.id===id);if(!v)return;const sh=$('#sheet');sh.hidden=false;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="動画のメニュー"><h2>動画の設定</h2>
+   <div class="field"><label class="label" for="vTitle">動画の名前</label><input id="vTitle" value="${esc(v.title)}" maxlength="60"></div>
+   <div class="field"><span class="label">だれの動画？</span><div class="seg full" id="vPlayer">${PLAYERS.map(n=>`<button data-act="pickplayer" data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
+   <button class="btn primary" data-act="renamevideo" data-id="${esc(id)}">保存</button>
+   ${!v.asset&&!(S.up[id]>=0)?`<button class="btn" data-act="reattach" data-id="${esc(id)}">動画をえらび直してアップロード</button>`:''}
+   <button class="btn danger" data-act="delvideo" data-id="${esc(id)}">この動画とシーンをぜんぶ削除</button>
+   <button class="btn ghost" data-act="closesheet">とじる</button></div>`}
+async function delVideo(id){const v=S.videos.find(x=>x.id===id);$('#sheet').hidden=true;busy(true,'削除中…');
+  try{const ids=new Set();for(const s of S.scenes.filter(s=>s.videoId===id)){ids.add(s.asset);ids.add(s.poster);await store.del('scenes',s.id)}
+    if(v&&v.asset)ids.add(v.asset);await store.del('videos',id);await files.del(id);S.local.delete(id);for(const a of ids)await store.drop(a);toast('削除しました')}
+  catch(e){toast('削除できませんでした')}busy(false);if(S.view==='home')viewHome()}
+
+let pickFor=null;
+function pickVideo(forId){pickFor=forId||null;const f=$('#filePick');f.value='';f.click()}
+$('#filePick').addEventListener('change',async e=>{const list=[...e.target.files];if(!list.length)return;if(!S.lock)$('#sheet').hidden=true;
+  if(pickFor){const id=pickFor;files.mem[id]=list[0];queueUpload(id,list[0]);go('edit',id);return}
+  const ids=[],player=PLAYERS.includes(S.who)?S.who:(S.filter!=='all'?S.filter:'カンタ'),used=new Set(S.videos.map(v=>v.title));
+  for(let i=0;i<list.length;i++){const file=list[i],id=uid(),d=new Date(file.lastModified||Date.now());
+    let base=(d.getMonth()+1)+'月'+d.getDate()+'日の動画',title=base,n=2;while(used.has(title))title=base+' '+(n++);used.add(title);
+    files.mem[id]=file;
+    try{await store.set('videos',id,{title,at:Date.now()+i,by:S.who||'',size:file.size,asset:null,player});ids.push(id);queueUpload(id,file)}catch(err){delete files.mem[id]}}
+  if(!ids.length){toast('動画を登録できませんでした');return}
+  if(S.mode==='cloud')toast(ids.length>1?ids.length+'本をアップロードします。終わるまでこの画面を開いたままに':'アップロード中です。終わるまでこの画面を開いたままに',6000);
+  if(ids.length===1)go('edit',ids[0]);else go('home');
+});
+
+/* ---------- scene editor ---------- */
+const INK=['#ffd43b','#ff4d4d','#ffffff','#4dabf7'];
+async function viewEdit(vid){
+  const v=S.videos.find(x=>x.id===vid);if(!v){go('home');return}
+  const E={kind:'clip',a:0,b:0,speed:.5,tool:'none',color:INK[0],strokes:[],dur:0,range:false};
+  const file=await files.get(vid);let src=file?URL.createObjectURL(file):(v.asset?store.url(v.asset):'');
+  if(S.view!=='edit'||S.arg!==vid){if(file)URL.revokeObjectURL(src);return}
+  if(!src){app.innerHTML=`<div class="empty"><h2>この動画はまだアップロードが終わっていません</h2><p>「${esc(v.title)}」は、追加したスマホでアップロードが終わると、ここから切り出せるようになります。途中で止まった場合は、動画をえらび直してください。</p>
+    <button class="btn primary big" data-act="reattach" data-id="${esc(vid)}">動画をえらぶ</button></div>`;return}
+  app.innerHTML=`
+  <div class="stage-wrap pin"><div class="stage" id="stage" style="aspect-ratio:16/9">
+    <video id="edV" playsinline webkit-playsinline preload="auto"></video><button class="tap" id="edTap" aria-label="再生・一時停止"></button>
+    <svg class="ov" id="edOv" viewBox="0 0 1000 562" preserveAspectRatio="none"><g></g></svg></div></div>
+  <div class="panel">
+    <div class="scrub"><input type="range" id="edSeek" min="0" max="1" step="0.01" value="0" aria-label="再生位置"><div class="rangebar" id="edBar"></div>
+      <div class="time num"><span id="edNow">0:00.0</span><span id="edDur">0:00.0</span></div></div>
+    <div class="transport"><button class="btn" data-j="-1">−1秒</button><button class="btn" data-j="-0.1">◀ コマ</button>
+      <button class="btn play" id="edPlay" aria-label="再生">▶</button><button class="btn" data-j="0.1">コマ ▶</button><button class="btn" data-j="1">＋1秒</button></div>
+    <div class="row split"><span class="label">スピード</span><div class="seg" id="edSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===E.speed}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>
+  </div>
+  <div class="panel">
+    <span class="label">切り取りかた</span>
+    <div class="seg full" id="edKind"><button data-k="clip" aria-pressed="true">動画で切り取る</button><button data-k="photo" aria-pressed="false">画像で切り取る</button></div>
+    <div id="edClip"><div class="ab"><button class="btn" id="edA">ここから<small class="num" id="edAT">0:00.0</small></button><button class="btn" id="edB">ここまで<small class="num" id="edBT">0:00.0</small></button></div>
+      <div class="row split" style="margin-top:8px"><span class="meta num" id="edLen"></span><button class="btn small" id="edRange">この範囲を再生</button></div></div>
+    <p class="meta" id="edPhoto" hidden>いま止まっている画面をそのまま画像にします。コマ送りでいちばん見たい瞬間に合わせよう。</p>
+  </div>
+  <div class="panel">
+    <span class="label">矢印・線を書く</span>
+    <div class="seg full" id="edTool"><button data-t="none" aria-pressed="true">書かない</button><button data-t="arrow" aria-pressed="false">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button></div>
+    <div class="row split"><div class="swatches" id="edCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
+      <span class="row"><button class="btn small" id="edUndo">1つ戻す</button><button class="btn small" id="edClear">全部消す</button></span></div>
+  </div>
+  <div class="panel">
+    <div class="field"><label class="label" for="edTitle">タイトル</label><input id="edTitle" maxlength="60" placeholder="例：2Q 速攻でパスが遅れた"></div>
+    <div class="field"><label class="label" for="edNote">コメント</label><textarea id="edNote" maxlength="1000" placeholder="何が起きた？次はどうする？"></textarea></div>
+    <div class="row split"><span class="label">だれの動画？</span><div class="seg" id="edWho">${PLAYERS.map(n=>`<button data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
+    <button class="btn primary big" id="edSave">このシーンを保存</button>
+  </div>`;
+  const V=$('#edV'),ov=$('#edOv'),seekEl=$('#edSeek');V.src=src;V.playbackRate=E.speed;
+  cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(file)URL.revokeObjectURL(src)};
+  let W=1000,H=562;
+  const paint=attachDraw({svg:ov,layer:$('g',ov),get W(){return W},get H(){return H},sw:7,tool:()=>E.tool,color:()=>E.color,strokes:()=>E.strokes});
+  const ui=()=>{if(!$('#edNow'))return;$('#edNow').textContent=fmt(V.currentTime);$('#edAT').textContent=fmt(E.a);$('#edBT').textContent=fmt(E.b);
+    const len=E.b-E.a;$('#edLen').textContent='長さ '+len.toFixed(1)+'秒'+(len>MAX_CLIP?'（'+MAX_CLIP+'秒までにしてください）':'');
+    const d=E.dur||1,p=x=>(x/d*100).toFixed(2)+'%';
+    $('#edBar').style.background=E.kind==='clip'?`linear-gradient(90deg,var(--sunken) ${p(E.a)},var(--accent) ${p(E.a)},var(--accent) ${p(E.b)},var(--sunken) ${p(E.b)})`:'';
+    $('#edPlay').textContent=V.paused?'▶':'❙❙'};
+  V.addEventListener('loadedmetadata',()=>{E.dur=isFinite(V.duration)?V.duration:0;seekEl.max=E.dur||1;$('#edDur').textContent=fmt(E.dur);
+    E.b=Math.min(E.dur,5);if(V.videoWidth){H=Math.round(1000*V.videoHeight/V.videoWidth);ov.setAttribute('viewBox',`0 0 1000 ${H}`);
+      const st=$('#stage');st.style.aspectRatio=V.videoWidth+'/'+V.videoHeight;st.style.width=`min(100%, calc(42vh * ${V.videoWidth/V.videoHeight}))`}
+    paint();ui();V.currentTime=0.001});
+  V.addEventListener('error',()=>toast('この動画は再生できませんでした。別の形式でためしてください',5000));
+  V.addEventListener('timeupdate',()=>{if(E.range&&V.currentTime>=E.b){V.pause();E.range=false}seekEl.value=V.currentTime;ui()});
+  ['play','pause'].forEach(n=>V.addEventListener(n,ui));
+  seekEl.addEventListener('input',()=>{E.range=false;V.currentTime=+seekEl.value;ui()});
+  const toggle=()=>{E.range=false;V.paused?V.play().catch(()=>{}):V.pause()};
+  $('#edPlay').onclick=toggle;$('#edTap').onclick=toggle;
+  $$('[data-j]',app).forEach(b=>b.onclick=()=>{V.pause();E.range=false;V.currentTime=clamp(V.currentTime+ +b.dataset.j,0,E.dur)});
+  const seg=(id,attr,fn)=>$$('#'+id+' button').forEach(b=>b.onclick=()=>{$$('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
+  seg('edSpeed','s',s=>{E.speed=+s;V.playbackRate=E.speed});
+  seg('edKind','k',k=>{E.kind=k;$('#edClip').hidden=k!=='clip';$('#edPhoto').hidden=k!=='photo';if(k==='photo')V.pause();ui()});
+  seg('edTool','t',t=>{E.tool=t;ov.classList.toggle('on',t!=='none');if(t!=='none')V.pause()});
+  seg('edCol','c',c=>{E.color=c});
+  seg('edWho','n',n=>{store.update('videos',vid,{player:n}).catch(()=>toast('保存できませんでした'))});
+  $('#edA').onclick=()=>{E.a=V.currentTime;if(E.b<=E.a+.2)E.b=Math.min(E.dur,E.a+5);ui()};
+  $('#edB').onclick=()=>{E.b=V.currentTime;if(E.a>=E.b-.2)E.a=Math.max(0,E.b-5);ui()};
+  $('#edRange').onclick=async()=>{V.pause();await seek(V,E.a);E.range=true;V.play().catch(()=>{})};
+  $('#edUndo').onclick=()=>{E.strokes.pop();paint()};$('#edClear').onclick=()=>{E.strokes.length=0;paint()};
+  $('#edSave').onclick=async()=>{
+    if(!V.videoWidth){toast('動画の読み込みを待ってください');return}
+    let kind=E.kind;const len=E.b-E.a;
+    if(kind==='clip'&&len<.3){toast('「ここから」「ここまで」で範囲を決めてください');return}
+    if(kind==='clip'&&len>MAX_CLIP){toast('1つのシーンは'+MAX_CLIP+'秒までです');return}
+    V.pause();E.range=false;const back=V.currentTime;busy(true,'シーンを保存しています','画面はこのままで待ってね');
+    try{let doc;
+      if(kind==='clip'){
+        await seek(V,E.a);const poster=await store.upload(await grab(V,480),'image/jpeg');
+        const cur=S.videos.find(x=>x.id===vid);
+        if(S.mode==='cloud')doc={kind,asset:null,poster,start:r3(E.a),end:r3(E.b),whole:true};
+        else{try{const r=await recordClip(V,E.a,E.b,p=>{$('#busyS').textContent='動画を切り出し中 '+Math.round(p*100)+'%'});
+            if(r.blob.size>MAX_UP)throw{code:'too_large'};$('#busyS').textContent='アップロード中…';
+            doc={kind,asset:await store.upload(r.blob,r.type),poster,start:0,end:r3(len)}}
+          catch(e){if(e&&e.code==='no_recorder'){kind='photo';doc={kind,asset:poster,poster};toast('このスマホでは動画の切り出しができないため、画像で保存しました',5000)}else throw e}}
+      }else{await seek(V,back);const a=await store.upload(await grab(V,1280),'image/jpeg');doc={kind,asset:a,poster:a}}
+      const id=uid(),title=$('#edTitle').value.trim()||(kind==='photo'?'画像シーン':'シーン')+' '+fmt(kind==='photo'?back:E.a);
+      await store.set('scenes',id,{...doc,videoId:vid,title,note:$('#edNote').value.trim(),speed:E.speed,strokes:E.strokes,ar:r3(V.videoWidth/V.videoHeight),t:r3(kind==='photo'?back:E.a),by:S.who||'',at:Date.now(),comments:{}});
+      busy(false);toast('保存しました');go('scene',id);
+    }catch(e){busy(false);toast(upErr(e),5000);try{await seek(V,back)}catch(_){}}
+  };
+}
+
+/* ---------- scene viewer + comments ---------- */
+let sceneRefresh=null;
+function viewScene(id){
+  const sc=S.scenes.find(x=>x.id===id);if(!sc){go('home');return}
+  const ar=sc.ar||16/9,H=Math.round(1000/ar),gv=S.videos.find(x=>x.id===sc.videoId),src=sc.asset||(sc.whole&&gv&&gv.asset)||'',memF=!src&&sc.whole?files.mem[sc.videoId]:null,memU=memF?URL.createObjectURL(memF):'',url=src?store.url(src):memU;let sp=sc.speed||1,lines=true;
+  app.innerHTML=`
+  <div class="stage-wrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(62vh * ${ar}))">
+    ${sc.kind==='photo'?`<img src="${esc(url)}" alt="${esc(sc.title)}">`:`<video id="scV" playsinline webkit-playsinline muted loop preload="auto" poster="${esc(store.url(sc.poster))}"></video><button class="tap" id="scTap" aria-label="再生・一時停止"></button>`}
+    <svg class="ov" id="scOv" viewBox="0 0 1000 ${H}" preserveAspectRatio="none">${strokesSVG(sc.strokes,1000,H,7)}</svg></div></div>
+  <div class="panel">${sc.kind==='photo'?'':`
+    <div class="transport"><button class="btn" data-j="-0.1">◀ コマ</button><button class="btn" id="scTop">最初から</button><button class="btn play" id="scPlay" aria-label="再生">▶</button><button class="btn" data-j="0.1">コマ ▶</button><span class="btn num" id="scNow" style="border:0;background:none">0:00.0</span></div>
+    <div class="row split"><span class="label">スピード</span><div class="seg" id="scSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===sp}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>`}
+    ${(sc.strokes||[]).length?`<label class="check"><input type="checkbox" id="scLines" checked>矢印・線を表示する</label>`:''}
+  </div>
+  ${sc.kind!=='photo'&&!url?'<div class="banner">試合の動画をアップロード中です。終わるとここで再生できます。</div>':''}
+  <div><h2 class="scene-title">${esc(sc.title)}</h2><p class="meta num">${esc(sc.by||'')}・${day(sc.at)}</p></div>
+  ${sc.note?`<p class="note">${esc(sc.note)}</p>`:''}
+  <div class="row"><button class="btn small" data-act="editscene" data-id="${esc(id)}">タイトル・コメントを直す</button></div>
+  <h3 class="label">このプレーの作戦板</h3>
+  ${sc.board?`<div class="stack" id="scBoard"></div><div class="row"><button class="btn small" data-act="sboard" data-id="${esc(id)}">作戦板を直す</button></div>`:`<button class="btn" data-act="sboard" data-id="${esc(id)}">＋ このプレーの作戦板を書く（コマの動き）</button>`}
+  <h3 class="label">みんなのコメント・質問</h3>
+  <div class="thread" id="scThread"></div>
+  <div class="composer panel"><textarea id="scText" maxlength="800" placeholder="コメントや質問を書く" aria-label="コメント"></textarea>
+    <div class="row split"><label class="check"><input type="checkbox" id="scQ">質問にする</label><button class="btn primary" id="scSend">送信</button></div></div>`;
+  const V=$('#scV');
+  if(V){const a=sc.start||0,b=sc.end||0;if(url)V.src=url;V.playbackRate=sp;
+    const ui=()=>{if(!$('#scPlay'))return;$('#scPlay').textContent=V.paused?'▶':'❙❙';$('#scNow').textContent=fmt(V.currentTime-a)};
+    V.addEventListener('loadedmetadata',()=>{if(a>0)V.currentTime=a;V.play().catch(()=>{})});
+    V.addEventListener('timeupdate',()=>{if(sc.whole&&(V.currentTime>=b||V.currentTime<a-.3))V.currentTime=a;ui()});
+    V.addEventListener('error',()=>{if(url)toast('この端末では動画を再生できませんでした',5000)});
+    ['play','pause'].forEach(n=>V.addEventListener(n,ui));
+    const toggle=()=>V.paused?V.play().catch(()=>{}):V.pause();$('#scPlay').onclick=toggle;$('#scTap').onclick=toggle;
+    $('#scTop').onclick=()=>{V.currentTime=a;V.play().catch(()=>{})};
+    $$('[data-j]',app).forEach(x=>x.onclick=()=>{V.pause();const hi=sc.whole?b:(isFinite(V.duration)?V.duration:b);V.currentTime=clamp(V.currentTime+ +x.dataset.j,a,hi)});
+    $$('#scSpeed button').forEach(x=>x.onclick=()=>{$$('#scSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp});
+    cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(memU)URL.revokeObjectURL(memU)}}
+  if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
+  const ln=$('#scLines');if(ln)ln.onchange=()=>{$('#scOv').style.visibility=ln.checked?'visible':'hidden'};
+  sceneRefresh=()=>{const cur=S.scenes.find(x=>x.id===id);if(!cur){go('home');return}markSeen(cur);
+    const cs=Object.entries(cur.comments||{}).filter(([,c])=>c&&!c.x).sort((a,b)=>a[1].at-b[1].at);
+    $('#scThread').innerHTML=cs.length?cs.map(([cid,c])=>`<div class="msg${c.q?' q':''}">${dot(c.by)}<div class="bubble"><span class="name">${esc(c.by)}</span>${c.q?'<span class="qtag">質問</span>':''}
+      <span class="meta num"> ${day(c.at)}</span><div class="txt">${esc(c.text)}</div>${c.by===S.who?`<button class="del" data-act="delcomment" data-id="${esc(id)}" data-c="${esc(cid)}">消す</button>`:''}</div></div>`).join('')
+      :`<p class="meta">まだコメントはありません。気づいたことや聞きたいことを書いてみよう。</p>`};
+  sceneRefresh();
+  $('#scSend').onclick=async()=>{const text=$('#scText').value.trim();if(!text)return;if(!S.who){whoSheet();return}
+    const c={by:S.who,text,at:Date.now(),...($('#scQ').checked?{q:true}:{})};$('#scSend').disabled=true;
+    try{await store.update('scenes',id,{comments:{['c'+uid()]:c}});$('#scText').value='';$('#scQ').checked=false}
+    catch(e){toast(S.mode==='cloud'?'コメントを送れませんでした。このアカウントは書きこみできないかもしれません':'コメントを送れませんでした',5000)}
+    $('#scSend').disabled=false;sceneRefresh()};
+}
+function editSceneSheet(id){const sc=S.scenes.find(x=>x.id===id);if(!sc)return;const sh=$('#sheet');sh.hidden=false;
+  sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="シーンを直す"><h2>シーンを直す</h2>
+   <div class="field"><label class="label" for="esTitle">タイトル</label><input id="esTitle" value="${esc(sc.title)}" maxlength="60"></div>
+   <div class="field"><label class="label" for="esNote">コメント</label><textarea id="esNote" maxlength="1000">${esc(sc.note||'')}</textarea></div>
+   <button class="btn primary" data-act="savescene" data-id="${esc(id)}">保存</button>
+   <button class="btn danger" data-act="delscene" data-id="${esc(id)}">このシーンを削除</button>
+   <button class="btn ghost" data-act="closesheet">とじる</button></div>`}
+
+/* ---------- tactic board (FIBA half court 15m x 14m, 1 unit = 1cm) ---------- */
+const HALF=`<rect x="505" y="0" width="490" height="580" fill="var(--court-key)"/>
+ <g fill="none" stroke="var(--court-line)" stroke-width="8"><rect x="4" y="4" width="1492" height="1392"/><rect x="505" y="4" width="490" height="576"/>
+ <circle cx="750" cy="580" r="180"/><path d="M90,4 L90,299 A675,675 0 0 0 1410,299 L1410,4"/><path d="M625,157.5 A125,125 0 0 0 875,157.5"/>
+ <path d="M570,1396 A180,180 0 0 1 930,1396"/><line x1="660" y1="120" x2="840" y2="120" stroke-width="10"/><circle cx="750" cy="157.5" r="24" stroke="var(--accent)"/></g>`;
+const BINK=['#14213d','#c92a2a','#1c5fd6','#ffffff'];
+const startPieces=()=>[['o1',.5,.72],['o2',.14,.52],['o3',.86,.52],['o4',.1,.1],['o5',.9,.1],['x1',.5,.55],['x2',.27,.42],['x3',.73,.42],['x4',.25,.15],['x5',.75,.15],['b',.57,.75]].map(([id,x,y])=>({id,x,y}));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const newBoard=()=>({id:null,title:'',memo:'',court:'half',frames:[{pieces:startPieces(),strokes:[]}]});
+function normBoard(b){const o=clone(b||{});
+  const frames=Array.isArray(o.frames)&&o.frames.length?o.frames.map(f=>({pieces:f.pieces||startPieces(),strokes:f.strokes||[]})):[{pieces:o.pieces||startPieces(),strokes:o.strokes||[]}];
+  return {id:o.id||null,title:o.title||'',memo:o.memo||'',court:o.court==='full'?'full':'half',frames}}
+/* One board = a list of steps. Each step holds where every piece stands plus the lines drawn on it; playing tweens step to step. */
+function boardUI(host,B,o){
+  const edit=!!(o&&o.edit);let fi=0,tool=edit?'move':'none',color=BINK[0],token=0,playing=false,paint=()=>{},W=1500,H=1400,pcs=null;
+  host.innerHTML=(edit?`<div class="seg full" data-r="court"><button data-k="half" aria-pressed="${B.court==='half'}">ハーフコート板</button><button data-k="full" aria-pressed="${B.court==='full'}">オールコート板</button></div>
+   <div class="seg full bd-tool" data-r="tool"><button data-t="move" aria-pressed="true">動かす</button><button data-t="arrow" aria-pressed="false">走る</button><button data-t="pass" aria-pressed="false">パス</button><button data-t="pen" aria-pressed="false">ペン</button></div>`:'')+
+   `<div class="court-wrap" data-r="wrap"></div>
+   <div class="panel"><div class="row split"><span class="label">コマの動き</span><span class="meta num" data-r="no"></span></div>
+    <div class="stepbar" data-r="steps"></div>
+    <div class="row"><button class="btn primary grow" data-r="play">▶ 動きを再生</button>${edit?'<button class="btn small" data-r="delstep">この動きを消す</button>':''}</div>
+    ${edit?`<p class="meta">「＋ 次の動き」を押してからコマを動かすと、動きが1つずつ記録されます。数字＝オフェンス、✕＝ディフェンス。</p>
+    <div class="row split"><div class="swatches" data-r="col">${BINK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="線の色${i+1}"></button>`).join('')}</div>
+     <span class="row"><button class="btn small" data-r="undo">1つ戻す</button><button class="btn small" data-r="clear">線を消す</button><button class="btn small" data-r="reset">並べ直す</button></span></div>`:''}</div>`;
+  const q=r=>host.querySelector(`[data-r="${r}"]`),fr=()=>B.frames[fi];
+  const place=list=>list.forEach(p=>{const g=pcs.querySelector(`[data-p="${p.id}"]`);if(g)g.setAttribute('transform',`translate(${r3(p.x*W)},${r3(p.y*H)})`)});
+  function court(){const full=B.court==='full';W=1500;H=full?2800:1400;const wrap=q('wrap');
+    wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="作戦板"><g>${HALF}</g>${full?`<g transform="translate(0,2800) scale(1,-1)">${HALF}</g>`:''}<g data-r="ink"></g><g data-r="pcs"></g></svg>`;
+    wrap.style.maxWidth=full?'min(520px, calc((100svh - 200px) * 15 / 28))':'';
+    const svg=wrap.firstChild;pcs=q('pcs');svg.classList.toggle('draw',edit&&tool!=='move');
+    pcs.innerHTML=fr().pieces.map(p=>{const k=p.id[0];
+      return `<g data-p="${p.id}" style="${edit?'cursor:grab;touch-action:none':''}"><circle r="${full?125:85}" fill="transparent"/>`+(k==='b'?`<circle r="${full?42:30}" fill="var(--accent)" stroke="#3a1a05" stroke-width="5"/><path d="M-30,0H30M0,-30V30" stroke="#3a1a05" stroke-width="4"/>`:
+        `<circle r="${full?68:48}" fill="${k==='o'?'#14213d':'#ffffff'}" stroke="${k==='o'?'#ffffff':'#c92a2a'}" stroke-width="7"/><text y="${full?24:17}" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="700" font-size="${full?70:50}" fill="${k==='o'?'#ffffff':'#c92a2a'}">${k==='o'?p.id[1]:'✕'+p.id[1]}</text>`)+`</g>`}).join('');
+    place(fr().pieces);
+    paint=attachDraw({svg,layer:q('ink'),W,H,sw:11,tool:()=>playing?'none':tool,color:()=>color,strokes:()=>fr().strokes});
+    if(!edit)return;
+    svg.addEventListener('touchstart',e=>{if(tool!=='move'||e.target.closest('[data-p]'))e.preventDefault()},{passive:false});
+    let drag=null;
+    svg.addEventListener('pointerdown',e=>{if(tool!=='move'||playing||!e.target.closest('[data-p]'))return;e.preventDefault();try{svg.setPointerCapture(e.pointerId)}catch(_){ }
+      const r=svg.getBoundingClientRect(),px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height,dist=p=>Math.hypot((p.x-px)*W,(p.y-py)*H);
+      drag=fr().pieces.slice().sort((a,b)=>dist(a)-dist(b))[0]});
+    svg.addEventListener('pointermove',e=>{if(!drag)return;const r=svg.getBoundingClientRect();drag.x=r3(clamp((e.clientX-r.left)/r.width,.03,.97));drag.y=r3(clamp((e.clientY-r.top)/r.height,.02,.98));place([drag])});
+    const up=()=>{drag=null};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up)}
+  function steps(){q('no').textContent=(fi+1)+' / '+B.frames.length;
+    q('steps').innerHTML=B.frames.map((_,i)=>`<button class="step" data-i="${i}" aria-pressed="${i===fi}" aria-label="動き${i+1}">${i+1}</button>`).join('')+(edit&&B.frames.length<12?'<button class="step add" data-i="add">＋ 次の動き</button>':'');
+    q('play').disabled=B.frames.length<2;if(edit)q('delstep').disabled=B.frames.length<2}
+  function show(i){fi=clamp(i,0,B.frames.length-1);place(fr().pieces);paint();steps()}
+  function stop(){token++;playing=false;q('play').textContent='▶ 動きを再生'}
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const tween=(ms,fn,alive)=>new Promise(res=>{const t0=performance.now();const f=now=>{if(!alive())return res();const t=clamp((now-t0)/ms,0,1);fn(t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2);t<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)});
+  async function play(){if(B.frames.length<2)return;const my=++token;playing=true;q('play').textContent='■ 止める';
+    for(let i=0;i<B.frames.length-1;i++){show(i);await wait(500);if(my!==token)return;
+      const a=B.frames[i].pieces,b=B.frames[i+1].pieces;
+      await tween(950,t=>place(a.map(p=>{const n=b.find(x=>x.id===p.id)||p;return {id:p.id,x:p.x+(n.x-p.x)*t,y:p.y+(n.y-p.y)*t}})),()=>my===token);if(my!==token)return}
+    stop();show(B.frames.length-1)}
+  q('play').onclick=()=>{if(playing){stop();show(fi)}else play()};
+  q('steps').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b)return;stop();
+    if(b.dataset.i==='add'){B.frames.splice(fi+1,0,{pieces:clone(fr().pieces),strokes:[]});show(fi+1);if(B.frames.length===2)toast('コマを次の位置に動かそう')}else show(+b.dataset.i)});
+  if(edit){
+    const seg=(r,attr,fn)=>[...q(r).children].forEach(b=>b.onclick=()=>{[...q(r).children].forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
+    seg('tool','t',t=>{tool=t;const v=q('wrap').firstChild;if(v)v.classList.toggle('draw',t!=='move')});seg('col','c',c=>{color=c});
+    seg('court','k',k=>{if(k===B.court)return;stop();B.frames.forEach(f=>{f.pieces.forEach(p=>{p.y=r3(k==='full'?p.y/2:Math.min(.98,p.y*2))});f.strokes=[]});B.court=k;court();steps();if(k==='full')q('tool').scrollIntoView({block:'start'})});
+    q('undo').onclick=()=>{fr().strokes.pop();paint()};q('clear').onclick=()=>{fr().strokes=[];paint()};
+    q('reset').onclick=()=>{stop();fr().pieces=startPieces();if(B.court==='full')fr().pieces.forEach(p=>p.y=r3(p.y/2));fr().strokes=[];court()};
+    q('delstep').onclick=()=>{if(B.frames.length<2)return;stop();B.frames.splice(fi,1);show(Math.min(fi,B.frames.length-1))}}
+  court();steps();
+  return {destroy:()=>{token++;playing=false}}}
+
+let B=null,boardList=null;
+function viewBoard(){
+  if(!B)B=newBoard();
+  app.innerHTML=`<div class="boards" id="bdList"></div><div class="stack" id="bdHost"></div>
+   <div class="panel"><div class="field"><label class="label" for="bdTitle">作戦の名前</label><input id="bdTitle" maxlength="40" placeholder="例：ゾーンの崩し方" value="${esc(B.title)}"></div>
+     <div class="field"><label class="label" for="bdMemo">メモ</label><textarea id="bdMemo" maxlength="600" placeholder="ポイントや合図を書いておこう">${esc(B.memo)}</textarea></div>
+     <div class="row"><button class="btn primary grow" id="bdSave">作戦を保存</button><button class="btn danger" id="bdDel" ${B.id?'':'hidden'}>削除</button></div></div>`;
+  const ui=boardUI($('#bdHost'),B,{edit:true});cleanup=ui.destroy;
+  $('#bdSave').onclick=async()=>{B.title=$('#bdTitle').value.trim()||'作戦 '+day(Date.now());B.memo=$('#bdMemo').value.trim();if(!B.id)B.id=uid();
+    try{await store.set('boards',B.id,{title:B.title,memo:B.memo,court:B.court,frames:clone(B.frames),by:S.who||'',at:Date.now()});toast('作戦を保存しました');$('#bdTitle').value=B.title;$('#bdDel').hidden=false;boardList()}
+    catch(e){toast('保存できませんでした',4000)}};
+  let armed=false;$('#bdDel').onclick=async()=>{const d=$('#bdDel');if(!armed){armed=true;d.classList.add('armed');d.textContent='もう一度押すと削除';setTimeout(()=>{armed=false;d.classList.remove('armed');d.textContent='削除'},3000);return}
+    try{await store.del('boards',B.id);B=null;toast('削除しました');go('board')}catch(e){toast('削除できませんでした')}};
+  boardList=()=>{const el=$('#bdList');if(!el)return;const bs=S.boards.slice().sort((a,b)=>b.at-a.at);
+    el.innerHTML=`<button class="btn small" data-act="newboard">＋ 新しい作戦板</button>`+bs.map(b=>`<button class="btn small" data-act="openboard" data-id="${esc(b.id)}" aria-pressed="${B&&B.id===b.id}"><span>${esc(b.title)}</span><em>${b.court==='full'?'オール':'ハーフ'}</em></button>`).join('')};
+  boardList();
+}
+/* the board that belongs to one play (scene) */
+function viewSBoard(id){
+  const sc=S.scenes.find(x=>x.id===id);if(!sc){go('home');return}
+  const b=normBoard(sc.board),t=sc.poster||(sc.kind==='photo'?sc.asset:'');
+  app.innerHTML=`<div class="row" style="flex-wrap:nowrap;align-items:flex-start">${t?`<span class="thumb" style="width:96px;flex:none"><img src="${esc(store.url(t))}" alt=""></span>`:''}
+    <div class="grow"><span class="eyebrow">Play board</span><h2 style="font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere">${esc(sc.title)}</h2><p class="meta">このプレーのコマの動きを記録します</p></div></div>
+   <div class="stack" id="bdHost"></div>
+   <div class="row"><button class="btn primary grow" id="sbSave">このプレーに保存</button>${sc.board?'<button class="btn danger" id="sbDel">作戦板を外す</button>':''}</div>`;
+  const ui=boardUI($('#bdHost'),b,{edit:true});cleanup=ui.destroy;
+  $('#sbSave').onclick=async()=>{try{await store.update('scenes',id,{board:{court:b.court,frames:clone(b.frames),by:S.who||'',at:Date.now()}});toast('作戦板を保存しました');go('scene',id)}catch(e){toast('保存できませんでした',4000)}};
+  const d=$('#sbDel');if(d)d.onclick=async()=>{if(!twoTap(d,'もう一度押すと外します'))return;try{await store.update('scenes',id,{board:null});go('scene',id)}catch(e){toast('外せませんでした')}};
+}
+
+/* ---------- actions ---------- */
+let armT=null;
+function twoTap(btn,label){if(btn.classList.contains('armed'))return true;btn.classList.add('armed');const old=btn.textContent;btn.textContent=label;clearTimeout(armT);armT=setTimeout(()=>{btn.classList.remove('armed');btn.textContent=old},3000);return false}
+const ACT={
+  tab:d=>go(d.v),back:()=>S.view==='sboard'?go('scene',S.arg):go('home'),sboard:d=>go('sboard',d.id),who:whoSheet,closesheet:()=>{if(!S.lock)$('#sheet').hidden=true},
+  setwho:d=>setWho(d.n),'setwho-other':()=>setWho($('#whoOther').value),
+  addvideo:()=>pickVideo(null),reattach:d=>pickVideo(d.id),edit:d=>go('edit',d.id),scene:d=>go('scene',d.id),
+  videomenu:d=>videoMenu(d.id),
+  auth:d=>doAuth(d.k),
+  filter:d=>{S.filter=d.f;try{localStorage.setItem('hansei.filter',d.f)}catch(e){}viewHome()},
+  pickplayer:(d,b)=>{$$('#vPlayer button').forEach(x=>x.setAttribute('aria-pressed',x===b))},
+  renamevideo:async d=>{const t=$('#vTitle').value.trim();if(!t)return;try{const pl=$('#vPlayer [aria-pressed="true"]');await store.update('videos',d.id,{title:t,...(pl?{player:pl.dataset.n}:{})});$('#sheet').hidden=true;if(S.view==='home')viewHome()}catch(e){toast('保存できませんでした')}},
+  delvideo:(d,b)=>{if(twoTap(b,'もう一度押すと削除（元にもどせません）'))delVideo(d.id)},
+  editscene:d=>editSceneSheet(d.id),
+  savescene:async d=>{const t=$('#esTitle').value.trim();if(!t)return;try{await store.update('scenes',d.id,{title:t,note:$('#esNote').value.trim()});$('#sheet').hidden=true;go('scene',d.id)}catch(e){toast('保存できませんでした')}},
+  delscene:async(d,b)=>{if(!twoTap(b,'もう一度押すと削除（元にもどせません）'))return;const sc=S.scenes.find(x=>x.id===d.id);$('#sheet').hidden=true;
+    try{await store.del('scenes',d.id);if(sc){if(!sc.whole)await store.drop(sc.asset);if(sc.poster!==sc.asset)await store.drop(sc.poster)}toast('削除しました')}catch(e){toast('削除できませんでした')}go('home')},
+  delcomment:async d=>{try{await store.update('scenes',d.id,{comments:{[d.c]:{x:true}}})}catch(e){toast('消せませんでした')}sceneRefresh&&sceneRefresh()},
+  newboard:()=>{B=newBoard();go('board')},
+  openboard:d=>{const b=S.boards.find(x=>x.id===d.id);if(!b)return;B=normBoard(b);go('board')}
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const f=ACT[b.dataset.act];if(f)f(b.dataset,b)});
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&S.who&&!S.lock)$('#sheet').hidden=true});
+
+top();viewHome();store.init();
+})();
+</script>
+</body>
+</html>
