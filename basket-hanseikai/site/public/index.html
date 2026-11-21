@@ -425,10 +425,12 @@ async function fillStorage(){if(!$('#storBody'))return;let h='';
   const el=$('#storBody');if(el)el.innerHTML=h}
 
 /* ---------- drawing (arrows / pen / circle), coordinates stored 0..1 ---------- */
+function textBox(s,W,H){const fs=r3(W*.052*(s.z||1)),w=r3([...s.s].reduce((n,ch)=>n+(ch.charCodeAt(0)<256?.6:1.02),0)*fs+fs*.8),h=r3(fs*1.55);
+  const cx=w+8>=W?W/2:clamp(s.a[0]*W,w/2+4,W-w/2-4),cy=clamp(s.a[1]*H,h/2+2,H-h/2-2);return {x:r3(cx-w/2),y:r3(cy-h/2),w,h,fs}}
 function strokeSVG(s,W,H,sw){
   const X=v=>r3(v*W),Y=v=>r3(v*H),c=esc(s.c||'#ffd43b');
-  if(s.t==='text'&&s.s){const fs=W*.052,w=[...s.s].reduce((n,ch)=>n+(ch.charCodeAt(0)<256?.6:1.02),0)*fs+fs*.8,x=r3(clamp(X(s.a[0]),w/2+4,W-w/2-4)),y=r3(clamp(Y(s.a[1]),fs,H-fs));
-    return `<rect x="${r3(x-w/2)}" y="${r3(y-fs*.8)}" width="${r3(w)}" height="${r3(fs*1.55)}" rx="${r3(fs*.28)}" fill="rgba(0,0,0,.74)"/><text x="${x}" y="${r3(y+fs*.33)}" text-anchor="middle" font-size="${r3(fs)}" font-weight="700" font-family="Noto Sans JP, Hiragino Kaku Gothic ProN, sans-serif" fill="${c}">${esc(s.s)}</text>`}
+  if(s.t==='text'&&s.s){const b=textBox(s,W,H);
+    return `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="${r3(b.fs*.28)}" fill="rgba(0,0,0,.74)"/><text x="${r3(b.x+b.w/2)}" y="${r3(b.y+b.fs*1.13)}" text-anchor="middle" font-size="${b.fs}" font-weight="700" font-family="Noto Sans JP, Hiragino Kaku Gothic ProN, sans-serif" fill="${c}">${esc(s.s)}</text>`}
   if(s.t==='pen'&&s.p&&s.p.length)return `<path d="M${s.p.map(p=>X(p[0])+','+Y(p[1])).join('L')}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
   if(s.t==='circle')return `<ellipse cx="${X((s.a[0]+s.b[0])/2)}" cy="${Y((s.a[1]+s.b[1])/2)}" rx="${Math.abs(X(s.b[0])-X(s.a[0]))/2}" ry="${Math.abs(Y(s.b[1])-Y(s.a[1]))/2}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
   if(s.t==='arrow'){const x1=X(s.a[0]),y1=Y(s.a[1]),x2=X(s.b[0]),y2=Y(s.b[1]),L=Math.hypot(x2-x1,y2-y1);if(L<sw)return '';
@@ -668,7 +670,8 @@ function viewScene(id){
     <div class="stack" id="scDrawBar" hidden style="gap:10px">
       <p class="meta" ${sc.kind==='photo'?'hidden':''}>動画を止めた瞬間に書くと、その瞬間に出てきて、えらんだ秒数で消えます。再生ボタンで確認できます。</p>
       <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button>${sc.kind==='photo'?'':'<button data-t="follow" aria-pressed="false">動く丸</button>'}<button data-t="text" aria-pressed="false">文字</button></div>
-      <div class="field" id="scTextF" hidden><input id="scTextIn" maxlength="30" placeholder="画面に入れる文字（例：ここでカット！）" aria-label="画面に入れる文字"><p class="meta">文字を入れてから、動画の上の置きたい場所をタップ。</p></div>
+      <div class="field" id="scTextF" hidden><input id="scTextIn" maxlength="30" placeholder="画面に入れる文字（例：ここでカット！）" aria-label="画面に入れる文字"><p class="meta">文字を入れてから、動画の上の置きたい場所をタップ。置いた文字はタップでえらんで、指で動かせます。</p>
+        <div class="row" id="scSelRow" hidden><span class="label">えらんだ文字</span><button class="btn small" id="scSm" aria-label="文字を小さく">A −</button><button class="btn small" id="scBg" aria-label="文字を大きく">A ＋</button><button class="btn small danger" id="scSelDel">この文字を消す</button></div></div>
       <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="5" aria-pressed="false">5秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
       <div class="row split"><div class="swatches" id="scCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
         <span class="row"><button class="btn small" id="scUndo">1つ戻す</button><button class="btn small" id="scClear">全部消す</button></span></div>
@@ -701,24 +704,40 @@ function viewScene(id){
     cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(memU)URL.revokeObjectURL(memU)}}
   if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
   let strokes=clone(sc.strokes||[]),drawing=false,dTool='arrow',dCol=INK[0];const ov=$('#scOv'),ln=$('#scLines');
-  let dLen=2;const relNow=()=>V?V.currentTime-(sc.start||0):0;
+  let dLen=2,sel=-1;const relNow=()=>V?V.currentTime-(sc.start||0):0;
   const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing&&dTool!=='text'?dTool:'none',color:()=>dCol,strokes:()=>strokes,
-    render:()=>{const rel=relNow(),full=!V||V.paused;return strokes.map(x=>animSVG(x,rel,1000,H,7,full)).join('')},
+    render:()=>{const rel=relNow(),full=!V||V.paused;let o=strokes.map(x=>animSVG(x,rel,1000,H,7,full)).join('');
+      if(drawing&&sel>=0&&strokes[sel]&&seen(strokes[sel])){const b=textBox(strokes[sel],1000,H);o+=`<rect x="${b.x-6}" y="${b.y-6}" width="${b.w+12}" height="${b.h+12}" rx="10" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="12 8"/>`}return o},
     changed:()=>{const x=strokes[strokes.length-1];if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}}});
+  const seen=x=>!(x.at!=null&&x.len>0)||(relNow()>=x.at-.02&&relNow()<=x.at+x.len+.02);
+  const select=i=>{sel=i;$('#scSelRow').hidden=i<0;const x=strokes[i];
+    if(x){$('#scTextIn').value=x.s;if(x.len)$$('#scLen button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.l===x.len))}paintS()};
+  let grab=null;const norm=e=>{const r=ov.getBoundingClientRect();return [clamp((e.clientX-r.left)/r.width,0,1),clamp((e.clientY-r.top)/r.height,0,1)]};
   ov.addEventListener('pointerdown',e=>{if(!drawing)return;if(V&&!V.paused)V.pause();if(dTool!=='text')return;
+    const [nx,ny]=norm(e),px=nx*1000,py=ny*H;let hit=-1;
+    for(let i=strokes.length-1;i>=0;i--){const x=strokes[i];if(x.t!=='text'||!seen(x))continue;const b=textBox(x,1000,H);if(px>=b.x-14&&px<=b.x+b.w+14&&py>=b.y-14&&py<=b.y+b.h+14){hit=i;break}}
+    if(hit>=0){e.preventDefault();try{ov.setPointerCapture(e.pointerId)}catch(_){ }const b=textBox(strokes[hit],1000,H);
+      grab={i:hit,dx:(b.x+b.w/2)/1000-nx,dy:(b.y+b.h/2)/H-ny};select(hit);return}
+    if(sel>=0){select(-1);$('#scTextIn').value='';return}   /* a tap on empty space lets go of the chosen label */
     const txt=$('#scTextIn').value.trim();if(!txt){toast('先に、入れる文字を書いてください');$('#scTextIn').focus();return}
-    const r=ov.getBoundingClientRect(),x={t:'text',c:dCol,a:[r3(clamp((e.clientX-r.left)/r.width,0,1)),r3(clamp((e.clientY-r.top)/r.height,0,1))],s:txt};
-    if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}strokes.push(x);$('#scTextIn').blur();paintS()},true);
+    const x={t:'text',c:dCol,a:[r3(nx),r3(ny)],s:txt};if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}
+    strokes.push(x);$('#scTextIn').blur();select(strokes.length-1)},true);
+  ov.addEventListener('pointermove',e=>{if(!grab||!strokes[grab.i])return;const [nx,ny]=norm(e);strokes[grab.i].a=[r3(clamp(nx+grab.dx,0,1)),r3(clamp(ny+grab.dy,0,1))];paintS()});
+  ['pointerup','pointercancel'].forEach(n=>ov.addEventListener(n,()=>{grab=null}));
+  const resize=k=>{const x=strokes[sel];if(!x)return;x.z=r3(clamp((x.z||1)*k,.5,3));paintS()};
+  $('#scSm').onclick=()=>resize(1/1.2);$('#scBg').onclick=()=>resize(1.2);
+  $('#scSelDel').onclick=()=>{if(sel<0)return;strokes.splice(sel,1);$('#scTextIn').value='';select(-1)};
+  $('#scTextIn').addEventListener('input',()=>{const v=$('#scTextIn').value.trim();if(sel>=0&&strokes[sel]&&v){strokes[sel].s=v;paintS()}});
   /* redraw as the video moves so strokes come and go at their moments */
   let raf=0,lastKey='';const tick=()=>{const k=relNow().toFixed(2)+'|'+strokes.length+'|'+(V&&V.paused);if(k!==lastKey){lastKey=k;paintS()}raf=requestAnimationFrame(tick)};
   if(V){raf=requestAnimationFrame(tick);const prevC=cleanup;cleanup=()=>{cancelAnimationFrame(raf);prevC&&prevC()}}
   ln.onchange=()=>{ov.style.visibility=ln.checked?'visible':'hidden'};
-  const setDraw=on=>{drawing=on;$('#scDrawBar').hidden=!on;$('#scDraw').hidden=on;ov.classList.toggle('on',on);$('#scWrap').classList.toggle('pin',on);
+  const setDraw=on=>{drawing=on;sel=-1;$('#scSelRow').hidden=true;$('#scDrawBar').hidden=!on;$('#scDraw').hidden=on;ov.classList.toggle('on',on);$('#scWrap').classList.toggle('pin',on);
     if(on){ln.checked=true;ov.style.visibility='visible';if(V)V.pause()}$('#scLinesL').hidden=on||!strokes.length};
   const pick=(sel,attr,fn)=>$$(sel+' button').forEach(b=>b.onclick=()=>{$$(sel+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
-  pick('#scTool','t',t=>{dTool=t;$('#scTextF').hidden=t!=='text';if(t==='text')$('#scTextIn').focus()});pick('#scLen','l',l=>{dLen=+l});pick('#scCol','c',c=>{dCol=c});
+  pick('#scTool','t',t=>{dTool=t;$('#scTextF').hidden=t!=='text';select(-1);if(t==='text')$('#scTextIn').focus()});pick('#scLen','l',l=>{dLen=+l;if(sel>=0&&strokes[sel]&&V){strokes[sel].len=dLen;paintS()}});pick('#scCol','c',c=>{dCol=c;if(sel>=0&&strokes[sel]){strokes[sel].c=c;paintS()}});
   $('#scDraw').onclick=()=>setDraw(true);
-  $('#scUndo').onclick=()=>{strokes.pop();paintS()};$('#scClear').onclick=()=>{strokes=[];paintS()};
+  $('#scUndo').onclick=()=>{strokes.pop();select(-1)};$('#scClear').onclick=()=>{strokes=[];select(-1)};
   $('#scDrawCancel').onclick=()=>{strokes=clone((S.scenes.find(x=>x.id===id)||sc).strokes||[]);paintS();setDraw(false)};
   $('#scDrawSave').onclick=async()=>{try{await store.update('scenes',id,{strokes:clone(strokes)});toast('線を保存しました');setDraw(false)}catch(e){toast('保存できませんでした',4000)}};
   const mood=r=>{const m=RATES[r],el=$('#scMood');el.className='mood '+(m?r:'none');el.innerHTML=m?`${m.i} ${m.l}${r==='ex'?'!':''}<small>${m.t}</small>`:'<small>このプレーの評価を下からえらぼう</small>';$('#scWrap').dataset.rate=m?r:''};
