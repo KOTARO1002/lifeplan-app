@@ -129,7 +129,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .panel{background:var(--surface);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
 .label{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em}
 .scrub{display:flex;flex-direction:column;gap:2px}
-.scrub input[type=range]{width:100%;margin:0;height:30px;accent-color:var(--accent)}
+.scrub input[type=range]{width:100%;margin:0;height:40px;accent-color:var(--accent);touch-action:none}
 .rangebar{height:6px;border-radius:3px;background:var(--sunken)}
 .time{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .transport{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
@@ -476,7 +476,8 @@ async function viewEdit(vid){
   cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(file)URL.revokeObjectURL(src)};
   let W=1000,H=562;
   const paint=attachDraw({svg:ov,layer:$('g',ov),get W(){return W},get H(){return H},sw:7,tool:()=>E.tool,color:()=>E.color,strokes:()=>E.strokes});
-  const ui=()=>{if(!$('#edNow'))return;$('#edNow').textContent=fmt(V.currentTime);$('#edAT').textContent=fmt(E.a);$('#edBT').textContent=fmt(E.b);
+  let drag=false,resume=false,want=null,shown=null,reqAt=0;
+  const ui=()=>{if(!$('#edNow'))return;$('#edNow').textContent=fmt(drag&&shown!=null?shown:V.currentTime);$('#edAT').textContent=fmt(E.a);$('#edBT').textContent=fmt(E.b);
     const len=E.b-E.a;$('#edLen').textContent='長さ '+len.toFixed(1)+'秒'+(len>MAX_CLIP?'（'+MAX_CLIP+'秒までにしてください）':'');
     const d=E.dur||1,p=x=>(x/d*100).toFixed(2)+'%';
     $('#edBar').style.background=E.kind==='clip'?`linear-gradient(90deg,var(--sunken) ${p(E.a)},var(--accent) ${p(E.a)},var(--accent) ${p(E.b)},var(--sunken) ${p(E.b)})`:'';
@@ -486,9 +487,15 @@ async function viewEdit(vid){
       const st=$('#stage');st.style.aspectRatio=V.videoWidth+'/'+V.videoHeight;st.style.width=`min(100%, calc(42vh * ${V.videoWidth/V.videoHeight}))`}
     paint();ui();V.currentTime=0.001});
   V.addEventListener('error',()=>toast('この動画は再生できませんでした。別の形式でためしてください',5000));
-  V.addEventListener('timeupdate',()=>{if(E.range&&V.currentTime>=E.b){V.pause();E.range=false}seekEl.value=V.currentTime;ui()});
+  V.addEventListener('timeupdate',()=>{if(E.range&&V.currentTime>=E.b){V.pause();E.range=false}if(!drag)seekEl.value=V.currentTime;ui()});
   ['play','pause'].forEach(n=>V.addEventListener(n,ui));
-  seekEl.addEventListener('input',()=>{E.range=false;V.currentTime=+seekEl.value;ui()});
+  /* Dragging the bar: pause, jump one seek at a time (a phone cannot keep up with a seek per pixel), land exactly on release. */
+  const jump=()=>{if(want==null)return;if(V.seeking&&performance.now()-reqAt<700)return;const t=want;want=null;reqAt=performance.now();
+    if(drag&&typeof V.fastSeek==='function'){try{V.fastSeek(t);return}catch(e){}}V.currentTime=t};
+  V.addEventListener('seeked',()=>{jump();ui()});
+  seekEl.addEventListener('input',()=>{if(!drag){drag=true;resume=!V.paused;V.pause()}E.range=false;want=shown=+seekEl.value;jump();ui()});
+  const drop=()=>{if(!drag)return;drag=false;want=null;reqAt=performance.now();V.currentTime=+seekEl.value;if(resume)V.play().catch(()=>{});ui()};
+  ['change','pointerup','touchend','pointercancel','touchcancel'].forEach(n=>seekEl.addEventListener(n,drop));
   const toggle=()=>{E.range=false;V.paused?V.play().catch(()=>{}):V.pause()};
   $('#edPlay').onclick=toggle;$('#edTap').onclick=toggle;
   $$('[data-j]',app).forEach(b=>b.onclick=()=>{V.pause();E.range=false;V.currentTime=clamp(V.currentTime+ +b.dataset.j,0,E.dur)});
