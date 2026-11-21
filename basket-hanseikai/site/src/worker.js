@@ -121,6 +121,12 @@ async function handle(req, env, url) {
     await env.B.resumeMultipartUpload('blobs/' + id, String(uploadId)).complete(parts);
     return json({ id });
   }
+  if (p === '/api/mp/abort' && m === 'POST') {
+    const { id, uploadId } = await req.json();
+    if (!BLOB_ID.test(String(id))) return json({ error: 'bad' }, 400);
+    try { await env.B.resumeMultipartUpload('blobs/' + id, String(uploadId)).abort(); } catch (e) {}
+    return json({ ok: true });
+  }
   if (p === '/api/usage' && m === 'GET') {
     let bytes = 0, files = 0, cursor;
     for (let i = 0; i < 10; i++) {

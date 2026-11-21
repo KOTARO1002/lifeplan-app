@@ -104,6 +104,13 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .chip{font-size:11.5px;font-weight:700;border-radius:4px;padding:1px 7px;background:var(--sunken);color:var(--muted)}
 .chip.q{background:var(--q-soft);color:var(--q)}
 .chip.ok{color:var(--ok)}
+.chip.bad{background:var(--accent-soft);color:var(--danger)}
+.upl{position:fixed;inset:0;z-index:35;background:var(--bg);display:grid;place-items:center;padding:24px max(20px,env(safe-area-inset-right,0px)) 24px max(20px,env(safe-area-inset-left,0px))}
+.upl-in{width:min(100%,420px);display:flex;flex-direction:column;gap:14px;text-align:center}
+.upl-title{font-size:19px;font-weight:900;line-height:1.4;text-wrap:balance}
+.upl-pct{font-size:72px;font-weight:700;line-height:1;font-style:italic}
+.upl-warn{background:var(--surface);border-radius:var(--r);padding:12px;font-weight:700;font-size:14px}
+.upl .meter{height:12px;border-radius:6px}.upl .meter i{background:var(--accent);border-radius:6px}
 .meter{height:8px;border-radius:4px;background:var(--sunken);overflow:hidden}
 .meter i{display:block;height:100%;background:var(--ink);border-radius:4px}
 .meter-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;color:var(--ink);font-size:14px}
@@ -197,6 +204,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v5a3 3 0 0 0 6 0V4M7 16l3-3M14 13l3 3M17 13l-3 3"/></svg>作戦板</button>
 </div></nav>
 <div id="sheet" class="sheet" hidden></div>
+<div id="upl" class="upl" role="alertdialog" aria-label="アップロード" hidden></div>
 <div id="busy" class="busy" hidden><div><b id="busyT"></b><span id="busyS"></span></div></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <input type="file" id="filePick" accept="video/*" multiple hidden>
@@ -284,31 +292,63 @@ async function doAuth(kind){const pass=$('#authPass').value.trim();if(pass.lengt
 /* ---------- game videos: kept in memory while this page is open, uploaded whole to the server ---------- */
 const files={mem:{},async put(id,file){this.mem[id]=file;return true},async get(id){return this.mem[id]||null},async del(id){delete this.mem[id]}};
 const fsize=b=>b>=1073741824?(b/1073741824).toFixed(1)+'GB':Math.max(1,Math.round((b||0)/1048576))+'MB';
-const CHUNK=32*1024*1024,wait=ms=>new Promise(r=>setTimeout(r,ms));
-S.up={}; /* video id -> 0..1 while uploading, -1 when it failed */
-function xhrPut(url,blob,onP){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('PUT',url);x.responseType='json';
+const CHUNK=16*1024*1024,wait=ms=>new Promise(r=>setTimeout(r,ms));
+S.uploading=false;S.up={};
+const UP={cancel:false,x:null};
+function xhrPut(url,blob,onP){return new Promise((res,rej)=>{const x=new XMLHttpRequest();UP.x=x;x.open('PUT',url);x.responseType='json';
   x.upload.onprogress=e=>{if(e.lengthComputable)onP(e.loaded/e.total)};
   x.onload=()=>x.status>=200&&x.status<300&&x.response?res(x.response):rej({code:(x.response&&x.response.error)||'http',status:x.status});
-  x.onerror=()=>rej({code:'network'});x.send(blob)})}
-function upShow(id){const el=document.querySelector(`[data-up="${id}"]`);if(el)el.textContent='アップロード中 '+Math.round((S.up[id]||0)*100)+'%'}
-let upChain=Promise.resolve(),wake=null;
-function queueUpload(id,file){if(S.mode!=='cloud')return;S.up[id]=0;upChain=upChain.then(()=>uploadVideo(id,file))}
-async function uploadVideo(id,file){
-  const type=/^video\/(mp4|webm|quicktime)$/.test(file.type)?file.type:'video/mp4',prog=p=>{S.up[id]=p;upShow(id)};
-  try{if(!wake&&navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
-  try{let asset;
-    if(file.size<=CHUNK)asset=(await xhrPut('/api/blob?type='+encodeURIComponent(type),file,prog)).id;
-    else{const mp=await api('/api/mp/create?type='+encodeURIComponent(type),{method:'POST'}),n=Math.ceil(file.size/CHUNK),parts=[];
-      for(let i=0;i<n;i++){let r;
-        for(let t=0;;t++){try{r=await xhrPut(`/api/mp/part?id=${mp.id}&uploadId=${encodeURIComponent(mp.uploadId)}&n=${i+1}`,file.slice(i*CHUNK,(i+1)*CHUNK),p=>prog((i+p)/n));break}
-          catch(e){if(t>=3)throw e;await wait(2500*(t+1))}}
+  x.onerror=()=>rej({code:'network'});x.onabort=()=>rej({code:'abort'});x.send(blob)})}
+/* wait until the phone is online and this page is in front again before retrying */
+const upReady=()=>new Promise(r=>{const t=()=>{if(UP.cancel||(navigator.onLine!==false&&!document.hidden))r();else setTimeout(t,1000)};t()});
+async function putRetry(url,blob,onP){for(let t=0;;t++){if(UP.cancel)throw{code:'abort'};
+  try{return await xhrPut(url,blob,onP)}catch(e){if(UP.cancel||e.code==='abort')throw{code:'abort'};if(e.status===401||e.status===400||e.status===413||t>=7)throw e;
+    upNote('電波を待っています… 自動でやり直します');await wait(2000+1500*t);await upReady();upNote('')}}}
+/* sends the whole file, then asks the server how many bytes it holds; resolves with the stored id only when they match */
+async function sendFile(file,onP){
+  const type=/^video\/(mp4|webm|quicktime)$/.test(file.type)?file.type:'video/mp4';let asset,mp=null;
+  try{
+    if(file.size<=CHUNK)asset=(await putRetry('/api/blob?type='+encodeURIComponent(type),file,onP)).id;
+    else{mp=await api('/api/mp/create?type='+encodeURIComponent(type),{method:'POST'});const n=Math.ceil(file.size/CHUNK),parts=[];
+      for(let i=0;i<n;i++){const r=await putRetry(`/api/mp/part?id=${mp.id}&uploadId=${encodeURIComponent(mp.uploadId)}&n=${i+1}`,file.slice(i*CHUNK,(i+1)*CHUNK),p=>onP((i+p)/n));
         parts.push({partNumber:r.n,etag:r.etag})}
-      await post('/api/mp/complete',{id:mp.id,uploadId:mp.uploadId,parts});asset=mp.id}
-    await store.update('videos',id,{asset});delete S.up[id];toast('動画のアップロードが終わりました');
-  }catch(e){S.up[id]=-1;toast('動画のアップロードに失敗しました。動画のメニューからやり直せます',6000)}
-  if(!Object.values(S.up).some(v=>v>=0)&&wake){try{wake.release()}catch(e){}wake=null}
-  if(S.view==='home')viewHome()}
-window.addEventListener('beforeunload',e=>{if(Object.values(S.up).some(v=>v>=0)){e.preventDefault();e.returnValue=''}});
+      await post('/api/mp/complete',{id:mp.id,uploadId:mp.uploadId,parts});asset=mp.id;mp=null}
+    const h=await fetch('/media/'+asset,{method:'HEAD',credentials:'same-origin'});
+    if(!h.ok||+h.headers.get('content-length')!==file.size){store.drop(asset);throw{code:'verify'}}
+    return asset;
+  }catch(e){if(mp)post('/api/mp/abort',{id:mp.id,uploadId:mp.uploadId}).catch(()=>{});throw e}}
+function upNote(t){const el=$('#uplNote');if(el)el.textContent=t}
+function upScreen(html){const el=$('#upl');el.hidden=false;el.innerHTML=`<div class="upl-in">${html}</div>`}
+function upProgress(file,i,n,p){
+  if(!$('#uplBar'))upScreen(`<span class="eyebrow">Uploading</span><b class="upl-title">動画をサーバーに保存しています${n>1?`（${i+1} / ${n}本目）`:''}</b>
+    <div class="upl-pct num" id="uplPct">0%</div><div class="meter"><i id="uplBar" style="width:0%"></i></div><div class="meta num" id="uplMB"></div>
+    <p class="upl-warn">終わるまでこの画面を開いたままにしてください。<br>画面を閉じたり、ほかのアプリに切りかえると止まります。</p><p class="meta" id="uplNote"></p>
+    <button class="btn" id="uplCancel">中止する</button>`);
+  $('#uplPct').textContent=Math.floor(p*100)+'%';$('#uplBar').style.width=(p*100).toFixed(1)+'%';$('#uplMB').textContent=fsize(file.size*p)+' / '+fsize(file.size);
+  $('#uplCancel').onclick=()=>{UP.cancel=true;try{UP.x&&UP.x.abort()}catch(e){}}}
+const upAsk=(file,e)=>new Promise(res=>{upScreen(`<span class="eyebrow">Upload failed</span><b class="upl-title">アップロードできませんでした</b>
+  <p class="upl-warn">${e&&e.code==='verify'?'サーバーに届いた動画が元の動画と一致しませんでした。':e&&e.code==='auth'?'合言葉の入れ直しが必要です。ページを開き直してください。':'電波が切れたか、途中で画面が閉じられた可能性があります。'}<br>この動画は保存されていません。</p>
+  <button class="btn primary big" id="uplAgain">もう一度アップロードする</button><button class="btn" id="uplSkip">やめる</button>`);
+  $('#uplAgain').onclick=()=>res(true);$('#uplSkip').onclick=()=>res(false)});
+/* list: File[]; forId: an existing video entry that has no stored file yet */
+async function uploadFlow(list,forId){
+  if(S.uploading)return;S.uploading=true;UP.cancel=false;let wake=null;const done=[];
+  try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
+  const player=PLAYERS.includes(S.who)?S.who:(S.filter!=='all'?S.filter:'カンタ'),used=new Set(S.videos.map(v=>v.title));
+  for(let i=0;i<list.length&&!UP.cancel;i++){const file=list[i];
+    for(;;){$('#upl').innerHTML='';upProgress(file,i,list.length,0);
+      try{const asset=await sendFile(file,p=>upProgress(file,i,list.length,p));
+        if(forId){await store.update('videos',forId,{asset,size:file.size});files.mem[forId]=file;done.push(forId)}
+        else{const id=uid(),d=new Date(file.lastModified||Date.now());let b=(d.getMonth()+1)+'月'+d.getDate()+'日の動画',title=b,n=2;while(used.has(title))title=b+' '+(n++);used.add(title);
+          await store.set('videos',id,{title,at:Date.now()+i,by:S.who||'',size:file.size,asset,player});files.mem[id]=file;done.push(id)}
+        break;
+      }catch(e){if(UP.cancel||(e&&e.code==='abort'))break;if(!await upAsk(file,e))break}}}
+  if(wake){try{wake.release()}catch(e){}}
+  $('#upl').hidden=true;$('#upl').innerHTML='';S.uploading=false;useAt=0;
+  if(UP.cancel)toast('アップロードを中止しました。保存されていない動画は追加されていません',5000);
+  else if(done.length)toast(done.length>1?done.length+'本のアップロードが完了しました':'アップロードが完了しました',4000);
+  if(done.length===1&&!UP.cancel)go('edit',done[0]);else go('home')}
+window.addEventListener('beforeunload',e=>{if(S.uploading){e.preventDefault();e.returnValue=''}});
 let useAt=0,useVal=null;
 async function fillStorage(){if(!$('#storBody'))return;let h='';
   if(S.mode==='cloud'){if(Date.now()-useAt>30000){try{useVal=await api('/api/usage');useAt=Date.now()}catch(e){}}
@@ -411,14 +451,14 @@ function viewHome(){
   app.innerHTML=banner()+pills+add+(vids.length?'':`<p class="none">${esc(f)}の動画はまだありません。</p>`)+vids.map(v=>{const sc=S.scenes.filter(s=>s.videoId===v.id).sort((a,b)=>a.at-b.at);
     return `<section class="game"><div class="game-head"><span class="eyebrow num">${day(v.at)}　Scenes ${sc.length}</span>
       <div class="row split" style="flex-wrap:nowrap;align-items:flex-start"><h2 class="grow">${esc(v.title)}</h2><button class="btn small ghost" data-act="videomenu" data-id="${esc(v.id)}" aria-label="この動画のメニュー">･･･</button></div>
-      <div class="row">${v.player?`<span class="tag" style="background:${whoColor(v.player)}">${esc(v.player)}</span>`:''}<span class="meta">記録：${esc(v.by||'')}</span>${v.asset?`<span class="chip ok">保存済み${v.size?' '+fsize(v.size):''}</span>`:S.up[v.id]>=0?`<span class="chip q" data-up="${esc(v.id)}">アップロード中 ${Math.round(S.up[v.id]*100)}%</span>`:S.mode==='cloud'?'<span class="chip">アップロード未完了</span>':''}</div></div>
-      <div class="rail">${sc.map(sceneCard).join('')}${S.canUpload?`<button class="add-tile" data-act="edit" data-id="${esc(v.id)}"><b>＋</b>シーンを切り出す</button>`:(sc.length?'':'<p class="none">まだシーンがありません。</p>')}</div></section>`}).join('')+`<section class="panel"><span class="eyebrow">Storage</span><div id="storBody" class="meta">確認中…</div></section>`;fillStorage()}
+      <div class="row">${v.player?`<span class="tag" style="background:${whoColor(v.player)}">${esc(v.player)}</span>`:''}<span class="meta">記録：${esc(v.by||'')}</span>${v.asset?`<span class="chip ok">✓ 保存済み${v.size?' '+fsize(v.size):''}</span>`:S.mode==='cloud'?'<span class="chip bad">保存できていません</span>':''}</div></div>
+      <div class="rail">${sc.map(sceneCard).join('')}${S.mode==='cloud'&&!v.asset?`<button class="add-tile" data-act="reattach" data-id="${esc(v.id)}"><b>↻</b>動画をえらび直す</button>`:S.canUpload?`<button class="add-tile" data-act="edit" data-id="${esc(v.id)}"><b>＋</b>シーンを切り出す</button>`:(sc.length?'':'<p class="none">まだシーンがありません。</p>')}</div></section>`}).join('')+`<section class="panel"><span class="eyebrow">Storage</span><div id="storBody" class="meta">確認中…</div></section>`;fillStorage()}
 function videoMenu(id){const v=S.videos.find(x=>x.id===id);if(!v)return;const sh=$('#sheet');sh.hidden=false;
   sh.innerHTML=`<div class="sheet-in" role="dialog" aria-label="動画のメニュー"><h2>動画の設定</h2>
    <div class="field"><label class="label" for="vTitle">動画の名前</label><input id="vTitle" value="${esc(v.title)}" maxlength="60"></div>
    <div class="field"><span class="label">だれの動画？</span><div class="seg full" id="vPlayer">${PLAYERS.map(n=>`<button data-act="pickplayer" data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
    <button class="btn primary" data-act="renamevideo" data-id="${esc(id)}">保存</button>
-   ${!v.asset&&!(S.up[id]>=0)?`<button class="btn" data-act="reattach" data-id="${esc(id)}">動画をえらび直してアップロード</button>`:''}
+   ${!v.asset&&S.mode==='cloud'?`<button class="btn" data-act="reattach" data-id="${esc(id)}">動画をえらび直してアップロード</button>`:''}
    <button class="btn danger" data-act="delvideo" data-id="${esc(id)}">この動画とシーンをぜんぶ削除</button>
    <button class="btn ghost" data-act="closesheet">とじる</button></div>`}
 async function delVideo(id){const v=S.videos.find(x=>x.id===id);$('#sheet').hidden=true;busy(true,'削除中…');
@@ -429,14 +469,10 @@ async function delVideo(id){const v=S.videos.find(x=>x.id===id);$('#sheet').hidd
 let pickFor=null;
 function pickVideo(forId){pickFor=forId||null;const f=$('#filePick');f.value='';f.click()}
 $('#filePick').addEventListener('change',async e=>{const list=[...e.target.files];if(!list.length)return;if(!S.lock)$('#sheet').hidden=true;
-  if(pickFor){const id=pickFor;files.mem[id]=list[0];queueUpload(id,list[0]);go('edit',id);return}
-  const ids=[],player=PLAYERS.includes(S.who)?S.who:(S.filter!=='all'?S.filter:'カンタ'),used=new Set(S.videos.map(v=>v.title));
-  for(let i=0;i<list.length;i++){const file=list[i],id=uid(),d=new Date(file.lastModified||Date.now());
-    let base=(d.getMonth()+1)+'月'+d.getDate()+'日の動画',title=base,n=2;while(used.has(title))title=base+' '+(n++);used.add(title);
-    files.mem[id]=file;
-    try{await store.set('videos',id,{title,at:Date.now()+i,by:S.who||'',size:file.size,asset:null,player});ids.push(id);queueUpload(id,file)}catch(err){delete files.mem[id]}}
-  if(!ids.length){toast('動画を登録できませんでした');return}
-  if(S.mode==='cloud')toast(ids.length>1?ids.length+'本をアップロードします。終わるまでこの画面を開いたままに':'アップロード中です。終わるまでこの画面を開いたままに',6000);
+  if(S.mode==='cloud'){uploadFlow(pickFor?[list[0]]:list,pickFor);return}
+  /* try-out mode: nothing is uploaded */
+  if(pickFor){files.mem[pickFor]=list[0];go('edit',pickFor);return}
+  const ids=[];for(let i=0;i<list.length;i++){const id=uid();files.mem[id]=list[i];await store.set('videos',id,{title:'おためし動画 '+(S.videos.length+1),at:Date.now()+i,by:S.who||'',size:list[i].size,asset:null,player:'カンタ'});ids.push(id)}
   if(ids.length===1)go('edit',ids[0]);else go('home');
 });
 
