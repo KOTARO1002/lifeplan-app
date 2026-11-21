@@ -142,6 +142,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .mood.bad{background:linear-gradient(#3c4556,#272d3a);color:#aab5c5}
 .mood.bad::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(105deg,transparent 0 13px,rgba(255,255,255,.13) 13px 14px)}
 .stage-wrap[data-rate="ex"]{border:3px solid var(--ex)}.stage-wrap[data-rate="good"]{border:3px solid var(--good)}.stage-wrap[data-rate="bad"]{border:3px solid var(--bad)}
+.seg#scTool button,.seg#scLen button{padding:0 9px}
 .seg.rates button{padding:0 4px;white-space:nowrap;font-size:12.5px}
 .seg.rates button[data-m="ex"][aria-pressed="true"]{background:linear-gradient(100deg,#ffe27a,#ffb300 50%,#ff8a00);color:#241800}
 .seg.rates button[data-m="good"][aria-pressed="true"]{background:var(--good);color:#fff}
@@ -426,6 +427,8 @@ async function fillStorage(){if(!$('#storBody'))return;let h='';
 /* ---------- drawing (arrows / pen / circle), coordinates stored 0..1 ---------- */
 function strokeSVG(s,W,H,sw){
   const X=v=>r3(v*W),Y=v=>r3(v*H),c=esc(s.c||'#ffd43b');
+  if(s.t==='text'&&s.s){const fs=W*.052,w=[...s.s].reduce((n,ch)=>n+(ch.charCodeAt(0)<256?.6:1.02),0)*fs+fs*.8,x=r3(clamp(X(s.a[0]),w/2+4,W-w/2-4)),y=r3(clamp(Y(s.a[1]),fs,H-fs));
+    return `<rect x="${r3(x-w/2)}" y="${r3(y-fs*.8)}" width="${r3(w)}" height="${r3(fs*1.55)}" rx="${r3(fs*.28)}" fill="rgba(0,0,0,.74)"/><text x="${x}" y="${r3(y+fs*.33)}" text-anchor="middle" font-size="${r3(fs)}" font-weight="700" font-family="Noto Sans JP, Hiragino Kaku Gothic ProN, sans-serif" fill="${c}">${esc(s.s)}</text>`}
   if(s.t==='pen'&&s.p&&s.p.length)return `<path d="M${s.p.map(p=>X(p[0])+','+Y(p[1])).join('L')}" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
   if(s.t==='circle')return `<ellipse cx="${X((s.a[0]+s.b[0])/2)}" cy="${Y((s.a[1]+s.b[1])/2)}" rx="${Math.abs(X(s.b[0])-X(s.a[0]))/2}" ry="${Math.abs(Y(s.b[1])-Y(s.a[1]))/2}" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
   if(s.t==='arrow'){const x1=X(s.a[0]),y1=Y(s.a[1]),x2=X(s.b[0]),y2=Y(s.b[1]),L=Math.hypot(x2-x1,y2-y1);if(L<sw)return '';
@@ -446,7 +449,7 @@ function animSVG(s,rel,W,H,sw,full){
   else if(s.t==='arrow'&&p<1)inner=strokeSVG({...s,b:[s.a[0]+(s.b[0]-s.a[0])*p,s.a[1]+(s.b[1]-s.a[1])*p]},W,H,sw);
   else if(s.t==='pen'&&p<1)inner=strokeSVG({...s,p:s.p.slice(0,Math.max(2,Math.ceil(s.p.length*p)))},W,H,sw);
   else inner=strokeSVG(s,W,H,sw);
-  const op=fade*(s.t==='circle'?p:1);return op>=1?inner:`<g opacity="${op.toFixed(2)}">${inner}</g>`}
+  const op=fade*(s.t==='circle'||s.t==='text'?p:1);return op>=1?inner:`<g opacity="${op.toFixed(2)}">${inner}</g>`}
 /* o: {svg, layer(g element), W,H,sw, get tool(), get color(), strokes(array), changed()} */
 function attachDraw(o){
   let cur=null;
@@ -664,8 +667,9 @@ function viewScene(id){
     <div class="row split"><label class="check" id="scLinesL" ${(sc.strokes||[]).length?'':'hidden'}><input type="checkbox" id="scLines" checked>矢印・線を表示する</label><button class="btn small" id="scDraw">矢印・線を書く</button></div>
     <div class="stack" id="scDrawBar" hidden style="gap:10px">
       <p class="meta" ${sc.kind==='photo'?'hidden':''}>動画を止めた瞬間に書くと、その瞬間に出てきて、えらんだ秒数で消えます。再生ボタンで確認できます。</p>
-      <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button>${sc.kind==='photo'?'':'<button data-t="follow" aria-pressed="false">動く丸</button>'}</div>
-      <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
+      <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button>${sc.kind==='photo'?'':'<button data-t="follow" aria-pressed="false">動く丸</button>'}<button data-t="text" aria-pressed="false">文字</button></div>
+      <div class="field" id="scTextF" hidden><input id="scTextIn" maxlength="30" placeholder="画面に入れる文字（例：ここでカット！）" aria-label="画面に入れる文字"><p class="meta">文字を入れてから、動画の上の置きたい場所をタップ。</p></div>
+      <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="5" aria-pressed="false">5秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
       <div class="row split"><div class="swatches" id="scCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
         <span class="row"><button class="btn small" id="scUndo">1つ戻す</button><button class="btn small" id="scClear">全部消す</button></span></div>
       <div class="row"><button class="btn primary grow" id="scDrawSave">書いた線を保存</button><button class="btn" id="scDrawCancel">やめる</button></div>
@@ -698,10 +702,13 @@ function viewScene(id){
   if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
   let strokes=clone(sc.strokes||[]),drawing=false,dTool='arrow',dCol=INK[0];const ov=$('#scOv'),ln=$('#scLines');
   let dLen=2;const relNow=()=>V?V.currentTime-(sc.start||0):0;
-  const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing?dTool:'none',color:()=>dCol,strokes:()=>strokes,
+  const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing&&dTool!=='text'?dTool:'none',color:()=>dCol,strokes:()=>strokes,
     render:()=>{const rel=relNow(),full=!V||V.paused;return strokes.map(x=>animSVG(x,rel,1000,H,7,full)).join('')},
     changed:()=>{const x=strokes[strokes.length-1];if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}}});
-  ov.addEventListener('pointerdown',()=>{if(drawing&&V&&!V.paused)V.pause()},true);
+  ov.addEventListener('pointerdown',e=>{if(!drawing)return;if(V&&!V.paused)V.pause();if(dTool!=='text')return;
+    const txt=$('#scTextIn').value.trim();if(!txt){toast('先に、入れる文字を書いてください');$('#scTextIn').focus();return}
+    const r=ov.getBoundingClientRect(),x={t:'text',c:dCol,a:[r3(clamp((e.clientX-r.left)/r.width,0,1)),r3(clamp((e.clientY-r.top)/r.height,0,1))],s:txt};
+    if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}strokes.push(x);$('#scTextIn').blur();paintS()},true);
   /* redraw as the video moves so strokes come and go at their moments */
   let raf=0,lastKey='';const tick=()=>{const k=relNow().toFixed(2)+'|'+strokes.length+'|'+(V&&V.paused);if(k!==lastKey){lastKey=k;paintS()}raf=requestAnimationFrame(tick)};
   if(V){raf=requestAnimationFrame(tick);const prevC=cleanup;cleanup=()=>{cancelAnimationFrame(raf);prevC&&prevC()}}
@@ -709,7 +716,7 @@ function viewScene(id){
   const setDraw=on=>{drawing=on;$('#scDrawBar').hidden=!on;$('#scDraw').hidden=on;ov.classList.toggle('on',on);$('#scWrap').classList.toggle('pin',on);
     if(on){ln.checked=true;ov.style.visibility='visible';if(V)V.pause()}$('#scLinesL').hidden=on||!strokes.length};
   const pick=(sel,attr,fn)=>$$(sel+' button').forEach(b=>b.onclick=()=>{$$(sel+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
-  pick('#scTool','t',t=>{dTool=t});pick('#scLen','l',l=>{dLen=+l});pick('#scCol','c',c=>{dCol=c});
+  pick('#scTool','t',t=>{dTool=t;$('#scTextF').hidden=t!=='text';if(t==='text')$('#scTextIn').focus()});pick('#scLen','l',l=>{dLen=+l});pick('#scCol','c',c=>{dCol=c});
   $('#scDraw').onclick=()=>setDraw(true);
   $('#scUndo').onclick=()=>{strokes.pop();paintS()};$('#scClear').onclick=()=>{strokes=[];paintS()};
   $('#scDrawCancel').onclick=()=>{strokes=clone((S.scenes.find(x=>x.id===id)||sc).strokes||[]);paintS();setDraw(false)};
