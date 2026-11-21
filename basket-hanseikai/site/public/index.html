@@ -61,6 +61,18 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .tab svg{width:24px;height:24px}
 .tab[aria-current="page"]{color:var(--ink);border-top-color:var(--accent)}
 
+.colA,.colB{display:contents}
+@media (min-width:900px){
+  .top-in,.tabs-in,main{max-width:1180px}
+  main.split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px 28px;align-items:start}
+  main.split>.boards,main.split>.banner{grid-column:1/-1}
+  main.split>.colA,main.split>.colB{display:flex;flex-direction:column;gap:16px;min-width:0}
+  main.split>.colA.stick{position:sticky;top:calc(env(safe-area-inset-top,0px) + 71px)}
+  main.split .stage-wrap.pin{position:static;box-shadow:none}
+  .scene-card{width:260px}.add-tile{width:160px;height:146px}
+  .sheet{place-items:center}.sheet-in{border-radius:16px;border:1px solid var(--line)}
+  .btn:hover:not(:disabled),.pill:hover,.step:hover{filter:brightness(1.15)}
+}
 .eyebrow{font-family:var(--f-display);font-style:italic;font-weight:700;font-size:15px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 .banner{background:var(--q-soft);border-left:4px solid var(--q);border-radius:6px;padding:10px 14px;font-size:13px}
 .btn{border:1px solid var(--line);background:var(--sunken);border-radius:8px;min-height:46px;padding:0 16px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -418,7 +430,7 @@ function top(){
     `<button class="who" data-act="who" aria-label="使う人をえらぶ">${S.who?dot(S.who)+`<span>${esc(S.who)}</span>`:'<span style="padding-left:6px">だれ？</span>'}</button>`;
   $('#tabHome').setAttribute('aria-current',S.view==='board'?'false':'page');$('#tabBoard').setAttribute('aria-current',S.view==='board'?'page':'false')}
 let cleanup=null;
-function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);
+function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);app.className=(view==='scene'||view==='edit'||view==='board')?'split':'';
   ({home:viewHome,edit:viewEdit,scene:viewScene,board:viewBoard,sboard:viewSBoard})[view](arg)}
 let lastMode='';function onData(col){if(lastMode!==S.mode){lastMode=S.mode;top()}
   if(S.view==='home')viewHome();
@@ -489,7 +501,7 @@ async function viewEdit(vid){
   if(!src){app.innerHTML=`<div class="empty"><h2>この動画はまだアップロードが終わっていません</h2><p>「${esc(v.title)}」は、追加したスマホでアップロードが終わると、ここから切り出せるようになります。途中で止まった場合は、動画をえらび直してください。</p>
     <button class="btn primary big" data-act="reattach" data-id="${esc(vid)}">動画をえらぶ</button></div>`;return}
   app.innerHTML=`
-  <div class="stage-wrap pin"><div class="stage" id="stage" style="aspect-ratio:16/9">
+  <div class="colA"><div class="stage-wrap pin"><div class="stage" id="stage" style="aspect-ratio:16/9">
     <video id="edV" playsinline webkit-playsinline preload="auto"></video><button class="tap" id="edTap" aria-label="再生・一時停止"></button>
     <svg class="ov" id="edOv" viewBox="0 0 1000 562" preserveAspectRatio="none"><g></g></svg></div></div>
   <div class="panel">
@@ -497,7 +509,7 @@ async function viewEdit(vid){
       <div class="time num"><span id="edNow">0:00.0</span><span id="edDur">0:00.0</span></div></div>
     <button class="btn play big" id="edPlay" aria-label="再生">▶</button>
   </div>
-  <div class="panel">
+  </div><div class="colB"><div class="panel">
     <span class="label">切り取りかた</span>
     <div class="seg full" id="edKind"><button data-k="clip" aria-pressed="true">動画で切り取る</button><button data-k="photo" aria-pressed="false">画像で切り取る</button></div>
     <div id="edClip"><div class="ab"><button class="btn" id="edA">ここから<small class="num" id="edAT">0:00.0</small></button><button class="btn" id="edB">ここまで<small class="num" id="edBT">0:00.0</small></button></div>
@@ -510,7 +522,7 @@ async function viewEdit(vid){
     <p class="meta">スローや矢印・線は、保存したあとのシーン画面でできます。</p>
     <div class="row split"><span class="label">だれの動画？</span><div class="seg" id="edWho">${PLAYERS.map(n=>`<button data-n="${n}" aria-pressed="${(v.player||'')===n}">${n}</button>`).join('')}</div></div>
     <button class="btn primary big" id="edSave">このシーンを保存</button>
-  </div>`;
+  </div></div>`;
   const V=$('#edV'),ov=$('#edOv'),seekEl=$('#edSeek');V.src=src;V.playbackRate=E.speed;
   cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(file)URL.revokeObjectURL(src)};
   let W=1000,H=562;
@@ -574,7 +586,7 @@ function viewScene(id){
   const sc=S.scenes.find(x=>x.id===id);if(!sc){go('home');return}
   const ar=sc.ar||16/9,H=Math.round(1000/ar),gv=S.videos.find(x=>x.id===sc.videoId),src=sc.asset||(sc.whole&&gv&&gv.asset)||'',memF=!src&&sc.whole?files.mem[sc.videoId]:null,memU=memF?URL.createObjectURL(memF):'',url=src?store.url(src):memU;let sp=sc.speed||1,lines=true;
   app.innerHTML=`
-  <div class="stage-wrap" id="scWrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(62vh * ${ar}))">
+  <div class="colA stick"><div class="stage-wrap" id="scWrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(62vh * ${ar}))">
     ${sc.kind==='photo'?`<img src="${esc(url)}" alt="${esc(sc.title)}">`:`<video id="scV" playsinline webkit-playsinline muted loop preload="auto" poster="${esc(store.url(sc.poster))}"></video><button class="tap" id="scTap" aria-label="再生・一時停止"></button>`}
     <svg class="ov" id="scOv" viewBox="0 0 1000 ${H}" preserveAspectRatio="none"><g></g></svg></div></div>
   <div class="panel">${sc.kind==='photo'?'':`
@@ -588,7 +600,7 @@ function viewScene(id){
       <div class="row"><button class="btn primary grow" id="scDrawSave">書いた線を保存</button><button class="btn" id="scDrawCancel">やめる</button></div>
     </div>
   </div>
-  ${sc.kind!=='photo'&&!url?'<div class="banner">試合の動画をアップロード中です。終わるとここで再生できます。</div>':''}
+  </div><div class="colB">${sc.kind!=='photo'&&!url?'<div class="banner">試合の動画をアップロード中です。終わるとここで再生できます。</div>':''}
   <div><h2 class="scene-title">${esc(sc.title)}</h2><p class="meta num">${esc(sc.by||'')}・${day(sc.at)}</p></div>
   ${sc.note?`<p class="note">${esc(sc.note)}</p>`:''}
   <div class="row"><button class="btn small" data-act="editscene" data-id="${esc(id)}">タイトル・コメントを直す</button><button class="btn small danger" data-act="delscene" data-id="${esc(id)}">このシーンを削除</button></div>
@@ -597,7 +609,7 @@ function viewScene(id){
   <h3 class="label">みんなのコメント・質問</h3>
   <div class="thread" id="scThread"></div>
   <div class="composer panel"><textarea id="scText" maxlength="800" placeholder="コメントや質問を書く" aria-label="コメント"></textarea>
-    <div class="row split"><label class="check"><input type="checkbox" id="scQ">質問にする</label><button class="btn primary" id="scSend">送信</button></div></div>`;
+    <div class="row split"><label class="check"><input type="checkbox" id="scQ">質問にする</label><button class="btn primary" id="scSend">送信</button></div></div></div>`;
   const V=$('#scV');
   if(V){const a=sc.start||0,b=sc.end||0;if(url)V.src=url;V.playbackRate=sp;
     const ui=()=>{if(!$('#scPlay'))return;$('#scPlay').textContent=V.paused?'▶':'❙❙';$('#scNow').textContent=fmt(V.currentTime-a)};
@@ -669,7 +681,7 @@ function boardUI(host,B,o){
   const place=list=>list.forEach(p=>{const g=pcs.querySelector(`[data-p="${p.id}"]`);if(g)g.setAttribute('transform',`translate(${r3(p.x*W)},${r3(p.y*H)})`)});
   function court(){const full=B.court==='full';W=1500;H=full?2800:1400;const wrap=q('wrap');
     wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="作戦板"><g>${HALF}</g>${full?`<g transform="translate(0,2800) scale(1,-1)">${HALF}</g>`:''}<g data-r="ink"></g><g data-r="pcs"></g></svg>`;
-    wrap.style.maxWidth=full?'min(520px, calc((100svh - 255px) * 15 / 28))':'';
+    wrap.style.maxWidth=full?'min(520px, calc((100svh - 255px) * 15 / 28))':'min(520px, max(300px, calc((100svh - 330px) * 15 / 14)))';
     const svg=wrap.firstChild;pcs=q('pcs');svg.classList.toggle('draw',edit&&tool!=='move');
     pcs.innerHTML=fr().pieces.map(p=>{const k=p.id[0];
       return `<g data-p="${p.id}" style="${edit?'cursor:grab;touch-action:none':''}"><circle r="${full?125:85}" fill="transparent"/>`+(k==='b'?`<circle r="${full?42:30}" fill="var(--accent)" stroke="#3a1a05" stroke-width="5"/><path d="M-30,0H30M0,-30V30" stroke="#3a1a05" stroke-width="4"/>`:
@@ -714,10 +726,10 @@ function boardUI(host,B,o){
 let B=null,boardList=null;
 function viewBoard(){
   if(!B)B=newBoard();
-  app.innerHTML=`<div class="boards" id="bdList"></div><div class="stack" id="bdHost"></div>
-   <div class="panel"><div class="field"><label class="label" for="bdTitle">作戦の名前</label><input id="bdTitle" maxlength="40" placeholder="例：ゾーンの崩し方" value="${esc(B.title)}"></div>
+  app.innerHTML=`<div class="boards" id="bdList"></div><div class="colA"><div class="stack" id="bdHost"></div></div>
+   <div class="colB"><div class="panel"><div class="field"><label class="label" for="bdTitle">作戦の名前</label><input id="bdTitle" maxlength="40" placeholder="例：ゾーンの崩し方" value="${esc(B.title)}"></div>
      <div class="field"><label class="label" for="bdMemo">メモ</label><textarea id="bdMemo" maxlength="600" placeholder="ポイントや合図を書いておこう">${esc(B.memo)}</textarea></div>
-     <div class="row"><button class="btn primary grow" id="bdSave">作戦を保存</button><button class="btn danger" id="bdDel" ${B.id?'':'hidden'}>削除</button></div></div>`;
+     <div class="row"><button class="btn primary grow" id="bdSave">作戦を保存</button><button class="btn danger" id="bdDel" ${B.id?'':'hidden'}>削除</button></div></div></div>`;
   const ui=boardUI($('#bdHost'),B,{edit:true});cleanup=ui.destroy;
   $('#bdSave').onclick=async()=>{B.title=$('#bdTitle').value.trim()||'作戦 '+day(Date.now());B.memo=$('#bdMemo').value.trim();if(!B.id)B.id=uid();
     try{await store.set('boards',B.id,{title:B.title,memo:B.memo,court:B.court,frames:clone(B.frames),by:S.who||'',at:Date.now()});toast('作戦を保存しました');$('#bdTitle').value=B.title;$('#bdDel').hidden=false;boardList()}
