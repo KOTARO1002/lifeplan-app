@@ -142,7 +142,7 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 .mood.bad{background:linear-gradient(#3c4556,#272d3a);color:#aab5c5}
 .mood.bad::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(105deg,transparent 0 13px,rgba(255,255,255,.13) 13px 14px)}
 .stage-wrap[data-rate="ex"]{border:3px solid var(--ex)}.stage-wrap[data-rate="good"]{border:3px solid var(--good)}.stage-wrap[data-rate="bad"]{border:3px solid var(--bad)}
-.seg#scTool button,.seg#scLen button{padding:0 9px}
+.seg#scTool button,.seg#scLen button{padding:0 7px}
 .seg.rates button{padding:0 4px;white-space:nowrap;font-size:12.5px}
 .seg.rates button[data-m="ex"][aria-pressed="true"]{background:linear-gradient(100deg,#ffe27a,#ffb300 50%,#ff8a00);color:#241800}
 .seg.rates button[data-m="good"][aria-pressed="true"]{background:var(--good);color:#fff}
@@ -444,7 +444,7 @@ const strokesSVG=(list,W,H,sw)=>(list||[]).map(s=>strokeSVG(s,W,H,sw)).join('');
 function animSVG(s,rel,W,H,sw,full){
   const timed=s.at!=null&&s.len>0,u=timed?rel-s.at:0;
   if(timed&&(u<-0.02||u>s.len+0.02))return '';
-  const p=!timed||full?1:clamp(u/0.45,0,1),fade=!timed||full?1:clamp((s.len-u)/0.25,0,1);let inner;
+  const p=!timed||full?1:clamp(u/Math.min(.45,s.len*.4),0,1),fade=!timed||full?1:clamp((s.len-u)/Math.min(.25,s.len*.3),0,1);let inner;
   if(s.t==='follow'){const n=s.p.length,q=timed?clamp(u/s.len,0,1):1,f=q*(n-1),i=Math.min(n-2,Math.floor(f)),k=f-i,A=s.p[i],B=s.p[i+1],c=esc(s.c||'#ffd43b');
     const x=r3((A[0]+(B[0]-A[0])*k)*W),y=r3((A[1]+(B[1]-A[1])*k)*H),trail=s.p.slice(0,i+1).map(v=>r3(v[0]*W)+','+r3(v[1]*H)).concat(x+','+y).join('L');
     inner=`<path d="M${trail}" fill="none" stroke="${c}" stroke-width="${sw*.6}" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/><circle cx="${x}" cy="${y}" r="${r3(W*.05)}" fill="none" stroke="${c}" stroke-width="${sw}"/>`}
@@ -672,7 +672,7 @@ function viewScene(id){
       <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button>${sc.kind==='photo'?'':'<button data-t="follow" aria-pressed="false">動く丸</button>'}<button data-t="text" aria-pressed="false">文字</button></div>
       <div class="field" id="scTextF" hidden><input id="scTextIn" maxlength="30" placeholder="画面に入れる文字（例：ここでカット！）" aria-label="画面に入れる文字"><p class="meta">文字を入れてから、動画の上の置きたい場所をタップ。置いた文字はタップでえらんで、指で動かせます。</p>
         <div class="row" id="scSelRow" hidden><span class="label">えらんだ文字</span><button class="btn small" id="scSm" aria-label="文字を小さく">A −</button><button class="btn small" id="scBg" aria-label="文字を大きく">A ＋</button><button class="btn small danger" id="scSelDel">この文字を消す</button></div></div>
-      <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="5" aria-pressed="false">5秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
+      <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="0.5" aria-pressed="false">0.5秒</button><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="5" aria-pressed="false">5秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
       <div class="row split"><div class="swatches" id="scCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
         <span class="row"><button class="btn small" id="scUndo">1つ戻す</button><button class="btn small" id="scClear">全部消す</button></span></div>
       <div class="row"><button class="btn primary grow" id="scDrawSave">書いた線を保存</button><button class="btn" id="scDrawCancel">やめる</button></div>
