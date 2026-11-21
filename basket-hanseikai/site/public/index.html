@@ -484,7 +484,7 @@ const INK=['#ffd43b','#ff4d4d','#ffffff','#4dabf7'];
 async function viewEdit(vid){
   const v=S.videos.find(x=>x.id===vid);if(!v){go('home');return}
   const E={kind:'clip',a:0,b:0,speed:1,tool:'none',color:INK[0],strokes:[],dur:0,range:false};
-  const file=await files.get(vid);let src=file?URL.createObjectURL(file):(v.asset?store.url(v.asset):'');
+  const file=v.asset?null:await files.get(vid);let src=v.asset?store.url(v.asset):(file?URL.createObjectURL(file):'');
   if(S.view!=='edit'||S.arg!==vid){if(file)URL.revokeObjectURL(src);return}
   if(!src){app.innerHTML=`<div class="empty"><h2>この動画はまだアップロードが終わっていません</h2><p>「${esc(v.title)}」は、追加したスマホでアップロードが終わると、ここから切り出せるようになります。途中で止まった場合は、動画をえらび直してください。</p>
     <button class="btn primary big" data-act="reattach" data-id="${esc(vid)}">動画をえらぶ</button></div>`;return}
