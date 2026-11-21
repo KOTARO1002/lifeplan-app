@@ -73,9 +73,9 @@ main{max-width:720px;margin:0 auto;padding-block:16px calc(var(--tab-h) + 28px);
 @media (min-width:900px){
   .top-in,.tabs-in,main{max-width:1180px}
   main.split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px 28px;align-items:start}
-  main.split>.boards,main.split>.banner{grid-column:1/-1}
+  main.split>.boards,main.split>.banner,main.split>.span{grid-column:1/-1}
   main.split>.colA,main.split>.colB{display:flex;flex-direction:column;gap:16px;min-width:0}
-  main.split>.colA.stick{position:sticky;top:calc(env(safe-area-inset-top,0px) + 71px)}
+  main.split>.colA.stick,main.split>.colB.stick{position:sticky;top:calc(env(safe-area-inset-top,0px) + 71px)}
   main.split .stage-wrap.pin{position:static;box-shadow:none}
   .scene-card{width:260px}.add-tile{width:160px;height:146px}
   .sheet{place-items:center}.sheet-in{border-radius:16px;border:1px solid var(--line)}
@@ -434,18 +434,31 @@ function strokeSVG(s,W,H,sw){
       `<polygon points="${x2},${y2} ${r3(bx-uy*hw)},${r3(by+ux*hw)} ${r3(bx+uy*hw)},${r3(by-ux*hw)}" fill="${c}"/>`}
   return ''}
 const strokesSVG=(list,W,H,sw)=>(list||[]).map(s=>strokeSVG(s,W,H,sw)).join('');
+/* A stroke with `at` (seconds into the scene) and `len` (seconds on screen) appears at that moment, draws itself in,
+   and fades out. Without them it is always shown. `full` = show it finished (used while the video is paused). */
+function animSVG(s,rel,W,H,sw,full){
+  const timed=s.at!=null&&s.len>0,u=timed?rel-s.at:0;
+  if(timed&&(u<-0.02||u>s.len+0.02))return '';
+  const p=!timed||full?1:clamp(u/0.45,0,1),fade=!timed||full?1:clamp((s.len-u)/0.25,0,1);let inner;
+  if(s.t==='follow'){const n=s.p.length,q=timed?clamp(u/s.len,0,1):1,f=q*(n-1),i=Math.min(n-2,Math.floor(f)),k=f-i,A=s.p[i],B=s.p[i+1],c=esc(s.c||'#ffd43b');
+    const x=r3((A[0]+(B[0]-A[0])*k)*W),y=r3((A[1]+(B[1]-A[1])*k)*H),trail=s.p.slice(0,i+1).map(v=>r3(v[0]*W)+','+r3(v[1]*H)).concat(x+','+y).join('L');
+    inner=`<path d="M${trail}" fill="none" stroke="${c}" stroke-width="${sw*.6}" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/><circle cx="${x}" cy="${y}" r="${r3(W*.05)}" fill="none" stroke="${c}" stroke-width="${sw}"/>`}
+  else if(s.t==='arrow'&&p<1)inner=strokeSVG({...s,b:[s.a[0]+(s.b[0]-s.a[0])*p,s.a[1]+(s.b[1]-s.a[1])*p]},W,H,sw);
+  else if(s.t==='pen'&&p<1)inner=strokeSVG({...s,p:s.p.slice(0,Math.max(2,Math.ceil(s.p.length*p)))},W,H,sw);
+  else inner=strokeSVG(s,W,H,sw);
+  const op=fade*(s.t==='circle'?p:1);return op>=1?inner:`<g opacity="${op.toFixed(2)}">${inner}</g>`}
 /* o: {svg, layer(g element), W,H,sw, get tool(), get color(), strokes(array), changed()} */
 function attachDraw(o){
   let cur=null;
   const pt=e=>{const r=o.svg.getBoundingClientRect();return [r3(clamp((e.clientX-r.left)/r.width,0,1)),r3(clamp((e.clientY-r.top)/r.height,0,1))]};
-  const paint=()=>{o.layer.innerHTML=strokesSVG(o.strokes(),o.W,o.H,o.sw)+(cur?strokeSVG(cur,o.W,o.H,o.sw):'')};
+  const paint=()=>{o.layer.innerHTML=(o.render?o.render():strokesSVG(o.strokes(),o.W,o.H,o.sw))+(cur?strokeSVG(cur.t==='follow'?{...cur,t:'pen'}:cur,o.W,o.H,o.sw):'')};
   o.svg.addEventListener('pointerdown',e=>{const t=o.tool();if(!t||t==='none'||t==='move')return;e.preventDefault();
     try{o.svg.setPointerCapture(e.pointerId)}catch(_){ }const p=pt(e);
-    cur=t==='pen'?{t:'pen',c:o.color(),p:[p]}:t==='circle'?{t:'circle',c:o.color(),a:p,b:p}:{t:'arrow',c:o.color(),a:p,b:p,...(t==='pass'?{d:1}:{})};paint()});
+    cur=(t==='pen'||t==='follow')?{t,c:o.color(),p:[p]}:t==='circle'?{t:'circle',c:o.color(),a:p,b:p}:{t:'arrow',c:o.color(),a:p,b:p,...(t==='pass'?{d:1}:{})};paint()});
   o.svg.addEventListener('pointermove',e=>{if(!cur)return;const p=pt(e);
-    if(cur.t==='pen'){const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])>.008&&cur.p.length<400)cur.p.push(p)}else cur.b=p;paint()});
+    if(cur.p){const l=cur.p[cur.p.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])>.008&&cur.p.length<400)cur.p.push(p)}else cur.b=p;paint()});
   const end=()=>{if(!cur)return;const s=cur;cur=null;
-    const ok=s.t==='pen'?s.p.length>1:Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1])>.02;
+    const ok=s.p?s.p.length>1:Math.hypot(s.b[0]-s.a[0],s.b[1]-s.a[1])>.02;
     if(ok){o.strokes().push(s);o.changed&&o.changed()}paint()};
   o.svg.addEventListener('pointerup',end);o.svg.addEventListener('pointercancel',end);
   paint();return paint}
@@ -481,7 +494,7 @@ function top(){
     `<button class="themebtn" data-act="theme" aria-label="ライトモードとダークモードを切りかえる" title="画面の色を切りかえる">${document.documentElement.getAttribute('data-theme')==='light'?'☾':'☀'}</button><button class="who" data-act="who" aria-label="使う人をえらぶ">${S.who?dot(S.who)+`<span>${esc(S.who)}</span>`:'<span style="padding-left:6px">だれ？</span>'}</button>`;
   $('#tabHome').setAttribute('aria-current',S.view==='board'?'false':'page');$('#tabBoard').setAttribute('aria-current',S.view==='board'?'page':'false')}
 let cleanup=null;
-function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);app.className=(view==='scene'||view==='edit'||view==='board')?'split':'';
+function go(view,arg){if(cleanup){try{cleanup()}catch(e){}cleanup=null}S.view=view;S.arg=arg;top();window.scrollTo(0,0);app.className=(view==='scene'||view==='edit'||view==='board'||view==='sboard')?'split':'';
   ({home:viewHome,edit:viewEdit,scene:viewScene,board:viewBoard,sboard:viewSBoard})[view](arg)}
 let lastMode='';function onData(col){if(lastMode!==S.mode){lastMode=S.mode;top()}
   if(S.view==='home')viewHome();
@@ -650,7 +663,9 @@ function viewScene(id){
     <div class="row split"><span class="label">スピード</span><div class="seg" id="scSpeed">${[.25,.5,1].map(s=>`<button data-s="${s}" aria-pressed="${s===sp}">${s===1?'ふつう':s+'倍スロー'}</button>`).join('')}</div></div>`}
     <div class="row split"><label class="check" id="scLinesL" ${(sc.strokes||[]).length?'':'hidden'}><input type="checkbox" id="scLines" checked>矢印・線を表示する</label><button class="btn small" id="scDraw">矢印・線を書く</button></div>
     <div class="stack" id="scDrawBar" hidden style="gap:10px">
-      <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button></div>
+      <p class="meta" ${sc.kind==='photo'?'hidden':''}>動画を止めた瞬間に書くと、その瞬間に出てきて、えらんだ秒数で消えます。再生ボタンで確認できます。</p>
+      <div class="seg full" id="scTool"><button data-t="arrow" aria-pressed="true">矢印</button><button data-t="pen" aria-pressed="false">ペン</button><button data-t="circle" aria-pressed="false">丸</button>${sc.kind==='photo'?'':'<button data-t="follow" aria-pressed="false">動く丸</button>'}</div>
+      <div class="row split" ${sc.kind==='photo'?'hidden':''}><span class="label">出しておく長さ</span><div class="seg" id="scLen"><button data-l="1" aria-pressed="false">1秒</button><button data-l="2" aria-pressed="true">2秒</button><button data-l="3" aria-pressed="false">3秒</button><button data-l="-1" aria-pressed="false">ずっと</button></div></div>
       <div class="row split"><div class="swatches" id="scCol">${INK.map((c,i)=>`<button class="sw" style="background:${c}" data-c="${c}" aria-pressed="${i===0}" aria-label="色${i+1}"></button>`).join('')}</div>
         <span class="row"><button class="btn small" id="scUndo">1つ戻す</button><button class="btn small" id="scClear">全部消す</button></span></div>
       <div class="row"><button class="btn primary grow" id="scDrawSave">書いた線を保存</button><button class="btn" id="scDrawCancel">やめる</button></div>
@@ -682,12 +697,19 @@ function viewScene(id){
     cleanup=()=>{V.pause();V.removeAttribute('src');V.load();if(memU)URL.revokeObjectURL(memU)}}
   if(sc.board){const bui=boardUI($('#scBoard'),normBoard(sc.board),{edit:false}),prev=cleanup;cleanup=()=>{bui.destroy();prev&&prev()}}
   let strokes=clone(sc.strokes||[]),drawing=false,dTool='arrow',dCol=INK[0];const ov=$('#scOv'),ln=$('#scLines');
-  const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing?dTool:'none',color:()=>dCol,strokes:()=>strokes});
+  let dLen=2;const relNow=()=>V?V.currentTime-(sc.start||0):0;
+  const paintS=attachDraw({svg:ov,layer:$('g',ov),W:1000,H,sw:7,tool:()=>drawing?dTool:'none',color:()=>dCol,strokes:()=>strokes,
+    render:()=>{const rel=relNow(),full=!V||V.paused;return strokes.map(x=>animSVG(x,rel,1000,H,7,full)).join('')},
+    changed:()=>{const x=strokes[strokes.length-1];if(V){x.at=r3(Math.max(0,relNow()));x.len=dLen}}});
+  ov.addEventListener('pointerdown',()=>{if(drawing&&V&&!V.paused)V.pause()},true);
+  /* redraw as the video moves so strokes come and go at their moments */
+  let raf=0,lastKey='';const tick=()=>{const k=relNow().toFixed(2)+'|'+strokes.length+'|'+(V&&V.paused);if(k!==lastKey){lastKey=k;paintS()}raf=requestAnimationFrame(tick)};
+  if(V){raf=requestAnimationFrame(tick);const prevC=cleanup;cleanup=()=>{cancelAnimationFrame(raf);prevC&&prevC()}}
   ln.onchange=()=>{ov.style.visibility=ln.checked?'visible':'hidden'};
   const setDraw=on=>{drawing=on;$('#scDrawBar').hidden=!on;$('#scDraw').hidden=on;ov.classList.toggle('on',on);$('#scWrap').classList.toggle('pin',on);
     if(on){ln.checked=true;ov.style.visibility='visible';if(V)V.pause()}$('#scLinesL').hidden=on||!strokes.length};
   const pick=(sel,attr,fn)=>$$(sel+' button').forEach(b=>b.onclick=()=>{$$(sel+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));fn(b.dataset[attr])});
-  pick('#scTool','t',t=>{dTool=t});pick('#scCol','c',c=>{dCol=c});
+  pick('#scTool','t',t=>{dTool=t});pick('#scLen','l',l=>{dLen=+l});pick('#scCol','c',c=>{dCol=c});
   $('#scDraw').onclick=()=>setDraw(true);
   $('#scUndo').onclick=()=>{strokes.pop();paintS()};$('#scClear').onclick=()=>{strokes=[];paintS()};
   $('#scDrawCancel').onclick=()=>{strokes=clone((S.scenes.find(x=>x.id===id)||sc).strokes||[]);paintS();setDraw(false)};
@@ -804,12 +826,29 @@ function viewBoard(){
 /* the board that belongs to one play (scene) */
 function viewSBoard(id){
   const sc=S.scenes.find(x=>x.id===id);if(!sc){go('home');return}
-  const b=normBoard(sc.board),t=sc.poster||(sc.kind==='photo'?sc.asset:'');
-  app.innerHTML=`<div class="row" style="flex-wrap:nowrap;align-items:flex-start">${t?`<span class="thumb" style="width:96px;flex:none"><img src="${esc(store.url(t))}" alt=""></span>`:''}
-    <div class="grow"><span class="eyebrow">Play board</span><h2 style="font-size:17px;font-weight:900;line-height:1.35;overflow-wrap:anywhere">${esc(sc.title)}</h2><p class="meta">このプレーのコマの動きを記録します</p></div></div>
-   <div class="stack" id="bdHost"></div>
-   <div class="row"><button class="btn primary grow" id="sbSave">このプレーに保存</button>${sc.board?'<button class="btn danger" id="sbDel">作戦板を外す</button>':''}</div>`;
-  const ui=boardUI($('#bdHost'),b,{edit:true});cleanup=ui.destroy;
+  const b=normBoard(sc.board),ar=sc.ar||16/9,H=Math.round(1000/ar),gv=S.videos.find(x=>x.id===sc.videoId),src=sc.asset||(sc.whole&&gv&&gv.asset)||'',url=src?store.url(src):'',photo=sc.kind==='photo';
+  let sp=sc.speed||1;
+  app.innerHTML=`<div class="span"><span class="eyebrow">Play board</span><h2 style="font-size:19px;font-weight:900;line-height:1.35;overflow-wrap:anywhere">${esc(sc.title)}</h2><p class="meta">動画を見ながら、このプレーのコマの動きを記録します</p></div>
+   <div class="colA"><div class="stack" id="bdHost"></div></div>
+   <div class="colB stick"><span class="label">このプレーの動画</span>
+     <div class="stage-wrap"><div class="stage" style="aspect-ratio:${ar};width:min(100%, calc(46vh * ${ar}))">
+       ${photo?`<img src="${esc(url)}" alt="${esc(sc.title)}">`:`<video id="sbV" playsinline webkit-playsinline muted loop preload="auto" poster="${esc(store.url(sc.poster))}"></video><button class="tap" id="sbTap" aria-label="再生・一時停止"></button>`}
+       <svg class="ov" viewBox="0 0 1000 ${H}" preserveAspectRatio="none"><g id="sbOv"></g></svg></div></div>
+     ${photo?'':`<div class="row"><button class="btn play grow" id="sbPlay" aria-label="再生">▶</button><button class="btn" id="sbTop">最初から</button></div>
+     <div class="seg full" id="sbSpeed">${[.25,.5,1].map(x=>`<button data-s="${x}" aria-pressed="${x===sp}">${x===1?'ふつう':x+'倍スロー'}</button>`).join('')}</div>`}
+     <div class="row"><button class="btn primary grow" id="sbSave">このプレーに保存</button>${sc.board?'<button class="btn danger" id="sbDel">作戦板を外す</button>':''}</div></div>`;
+  const ui=boardUI($('#bdHost'),b,{edit:true}),V=$('#sbV');let raf=0;
+  const lines=()=>{const rel=V?V.currentTime-(sc.start||0):0;$('#sbOv').innerHTML=(sc.strokes||[]).map(x=>animSVG(x,rel,1000,H,7,!V||V.paused)).join('')};lines();
+  if(V){const a=sc.start||0,e=sc.end||0;if(url)V.src=url;V.playbackRate=sp;
+    const st=()=>{const pl=$('#sbPlay');if(pl)pl.textContent=V.paused?'▶':'❙❙'};
+    V.addEventListener('loadedmetadata',()=>{if(a>0)V.currentTime=a});
+    V.addEventListener('timeupdate',()=>{if(sc.whole&&(V.currentTime>=e||V.currentTime<a-.3))V.currentTime=a});
+    ['play','pause'].forEach(n=>V.addEventListener(n,st));
+    const tg=()=>V.paused?V.play().catch(()=>{}):V.pause();$('#sbPlay').onclick=tg;$('#sbTap').onclick=tg;
+    $('#sbTop').onclick=()=>{V.currentTime=a;V.play().catch(()=>{})};
+    $$('#sbSpeed button').forEach(x=>x.onclick=()=>{$$('#sbSpeed button').forEach(y=>y.setAttribute('aria-pressed',y===x));sp=+x.dataset.s;V.playbackRate=sp});
+    const tick=()=>{lines();raf=requestAnimationFrame(tick)};raf=requestAnimationFrame(tick)}
+  cleanup=()=>{ui.destroy();cancelAnimationFrame(raf);if(V){V.pause();V.removeAttribute('src');V.load()}};
   $('#sbSave').onclick=async()=>{try{await store.update('scenes',id,{board:{court:b.court,frames:clone(b.frames),by:S.who||'',at:Date.now()}});toast('作戦板を保存しました');go('scene',id)}catch(e){toast('保存できませんでした',4000)}};
   const d=$('#sbDel');if(d)d.onclick=async()=>{if(!twoTap(d,'もう一度押すと外します'))return;try{await store.update('scenes',id,{board:null});go('scene',id)}catch(e){toast('外せませんでした')}};
 }
